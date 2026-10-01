@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "176558449603",
+    "project_id": "avero-147cb",
+    "storage_bucket": "avero-147cb.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:176558449603:android:5f200df0928558128b5376",
+        "android_client_info": {
+          "package_name": "com.example.flutter_ecommerce_app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "176558449603-jq0oi0g88prib1663717k6k2969vva4p.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.flutter_ecommerce_app",
+            "certificate_hash": "695c1fd810e048c82917f1a17f9147b1afc98204"
+          }
+        },
+        {
+          "client_id": "176558449603-a3itd3303eva968n1lvaof7nj268q0t4.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDCrxgDVcz6HmoOcXD5Atd-HOQ3hYnxHGM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "176558449603-a3itd3303eva968n1lvaof7nj268q0t4.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

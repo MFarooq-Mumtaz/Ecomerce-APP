@@ -1,0 +1,24 @@
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "avero-147cb",
+          "appId": "1:176558449603:android:5f200df0928558128b5376",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "avero-147cb",
+          "configurations": {
+            "android": "1:176558449603:android:5f200df0928558128b5376"
+          }
+        }
+      }
+    }
+  },
+  "firestore": {
+    "rules": "firestore.rules"
+  }
+}
