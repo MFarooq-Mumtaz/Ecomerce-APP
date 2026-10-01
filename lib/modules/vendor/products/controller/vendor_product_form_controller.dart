@@ -7,6 +7,7 @@ import '../../../../data/models/product_model.dart';
 import '../../../../data/repositories/product_repository.dart';
 import '../../../../data/services/auth_service.dart';
 import '../../../../data/services/local_product_image_service.dart';
+import '../../../../core/widgets/app_snackbar.dart';
 
 class VendorProductFormController extends GetxController {
   VendorProductFormController(
@@ -64,6 +65,8 @@ class VendorProductFormController extends GetxController {
           }
         }
       }
+    } catch (_) {
+      AppSnackbar.show('Product', 'Categories could not be loaded. Try again.');
     } finally {
       isLoadingCategories.value = false;
     }
@@ -80,7 +83,7 @@ class VendorProductFormController extends GetxController {
       }
       pickedImagePath.value = image.path;
     } catch (_) {
-      Get.snackbar('Product image', 'Could not open image picker.');
+      AppSnackbar.show('Product image', 'Could not open image picker.');
     }
   }
 
@@ -92,7 +95,7 @@ class VendorProductFormController extends GetxController {
 
     final validation = _validate();
     if (validation != null) {
-      Get.snackbar('Product', validation);
+      AppSnackbar.show('Product', validation);
       return;
     }
 
@@ -131,8 +134,9 @@ class VendorProductFormController extends GetxController {
             editingProduct?.localImagePath,
           );
         }
+        Get.closeAllSnackbars();
         Get.back();
-        Get.snackbar('Product', 'Product updated.');
+        AppSnackbar.show('Product', 'Product updated.');
         return;
       }
 
@@ -140,14 +144,15 @@ class VendorProductFormController extends GetxController {
         vendorId: vendorId,
         product: product,
       );
+      Get.closeAllSnackbars();
       Get.back();
-      Get.snackbar('Product', 'Product added.');
+      AppSnackbar.show('Product', 'Product added.');
     } on ProductWriteFailure catch (failure) {
       await _imageService.deleteIfOwnedProductImage(savedLocalImagePath);
-      Get.snackbar('Product', failure.message);
+      AppSnackbar.show('Product', failure.message);
     } catch (_) {
       await _imageService.deleteIfOwnedProductImage(savedLocalImagePath);
-      Get.snackbar('Product', 'Product could not be saved.');
+      AppSnackbar.show('Product', 'Product could not be saved.');
     } finally {
       isSaving.value = false;
     }
@@ -169,6 +174,10 @@ class VendorProductFormController extends GetxController {
     final stock = int.tryParse(stockController.text.trim());
     if (stock == null || stock < 0) {
       return 'Enter a valid stock quantity.';
+    }
+
+    if (selectedCategory.value == null) {
+      return 'Select a category.';
     }
 
     return null;

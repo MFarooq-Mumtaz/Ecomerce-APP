@@ -27,11 +27,8 @@ class LoginBinding extends Bindings {
       );
     }
     Get.lazyPut<LoginController>(
-      () => LoginController(
-        Get.find<AuthRepository>(),
-        Get.find<AuthService>(),
-        Get.find<UserRepository>(),
-      ),
+      () =>
+          LoginController(Get.find<AuthRepository>(), Get.find<AuthService>()),
     );
   }
 }

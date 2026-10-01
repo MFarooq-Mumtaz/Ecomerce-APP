@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 class AuthFailure implements Exception {
@@ -49,6 +50,14 @@ class AuthService {
     }
   }
 
+  Future<void> sendPasswordResetEmail(String email) async {
+    try {
+      await _firebaseAuth.sendPasswordResetEmail(email: email.trim());
+    } on FirebaseAuthException catch (error) {
+      throw AuthFailure(_mapPasswordResetMessage(error.code));
+    }
+  }
+
   Future<UserCredential> createUserWithEmailPassword({
     required String email,
     required String password,
@@ -63,7 +72,12 @@ class AuthService {
       await credential.user?.updateDisplayName(displayName.trim());
       return credential;
     } on FirebaseAuthException catch (error) {
-      throw AuthFailure(_mapFirebaseAuthMessage(error.code));
+      throw AuthFailure(
+        _mapFirebaseAuthMessage(
+          error.code,
+          fallback: 'Sign-up failed. Please try again.',
+        ),
+      );
     }
   }
 
@@ -90,6 +104,13 @@ class AuthService {
       final credential = GoogleAuthProvider.credential(idToken: idToken);
       return await _firebaseAuth.signInWithCredential(credential);
     } on GoogleSignInException catch (error) {
+      debugPrint('Google sign-in failed: $error');
+      if (_isGoogleConfigurationRejection(error)) {
+        throw const AuthFailure(
+          'Google sign-in is not set up for this app build yet. '
+          'Please use email sign-in for now.',
+        );
+      }
       throw AuthFailure(
         _mapGoogleSignInMessage(error.code),
         isCancellation: error.code == GoogleSignInExceptionCode.canceled,
@@ -108,14 +129,18 @@ class AuthService {
     _isGoogleInitialized = true;
   }
 
-  String _mapFirebaseAuthMessage(String code) {
+  String _mapFirebaseAuthMessage(
+    String code, {
+    String fallback = 'Sign-in failed. Please try again.',
+  }) {
     switch (code) {
       case 'invalid-email':
-        return 'Enter a valid email address.';
+        return 'Please enter a valid email address.';
       case 'invalid-credential':
       case 'wrong-password':
+        return 'Invalid email or password.';
       case 'user-not-found':
-        return 'Email or password is incorrect.';
+        return 'No account found for this email.';
       case 'user-disabled':
         return 'This account has been disabled.';
       case 'network-request-failed':
@@ -125,10 +150,38 @@ class AuthService {
       case 'email-already-in-use':
         return 'An account already exists with this email.';
       case 'weak-password':
-        return 'Choose a stronger password.';
+        return 'Choose a stronger password (at least 6 characters).';
+      case 'operation-not-allowed':
+        return 'Email sign-in is not enabled for this app.';
       default:
-        return 'Sign-in failed. Please try again.';
+        return fallback;
     }
+  }
+
+  String _mapPasswordResetMessage(String code) {
+    switch (code) {
+      case 'invalid-email':
+        return 'Please enter a valid email address.';
+      case 'user-not-found':
+        return 'No account found for this email.';
+      case 'network-request-failed':
+        return 'Check your internet connection and try again.';
+      case 'too-many-requests':
+        return 'Too many requests. Please wait and try again later.';
+      default:
+        return 'Could not send the reset email. Please try again.';
+    }
+  }
+
+  /// Credential Manager reports "[16] Account reauth failed" as a cancel when
+  /// the app's SHA-1 is not registered in Firebase. That is a setup problem,
+  /// not the user closing the dialog, so it must not be hidden.
+  bool _isGoogleConfigurationRejection(GoogleSignInException error) {
+    if (error.code != GoogleSignInExceptionCode.canceled) {
+      return false;
+    }
+    final description = error.description?.toLowerCase() ?? '';
+    return description.contains('[16]') || description.contains('reauth');
   }
 
   String _mapGoogleSignInMessage(GoogleSignInExceptionCode code) {

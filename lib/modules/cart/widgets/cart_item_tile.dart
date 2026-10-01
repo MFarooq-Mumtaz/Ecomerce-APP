@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_palette.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/product_image.dart';
 import '../../../data/repositories/cart_repository.dart';
@@ -22,77 +23,83 @@ class CartItemTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: AppColors.surface,
+      color: context.colors.surface,
       borderRadius: BorderRadius.circular(8),
       clipBehavior: Clip.antiAlias,
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: SizedBox.square(
-                dimension: 72,
-                child: ProductImage(
-                  imageUrl: item.product.imageUrl,
-                  localImagePath: item.product.localImagePath,
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    item.product.name,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTextStyles.titleMedium,
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    '\$${item.product.price.toStringAsFixed(2)}',
-                    style: AppTextStyles.bodyLarge.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.primary,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          // The image grows a little on wide cards and shrinks on narrow ones.
+          final imageSize = (constraints.maxWidth * 0.22).clamp(56.0, 96.0);
+          return Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: SizedBox.square(
+                    dimension: imageSize,
+                    child: ProductImage(
+                      imageUrl: item.product.imageUrl,
+                      localImagePath: item.product.localImagePath,
                     ),
                   ),
-                  const SizedBox(height: 12),
-                  Row(
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _QuantityButton(
-                        icon: Icons.remove,
-                        onPressed: onDecrease,
-                        tooltip: 'Decrease quantity',
+                      Text(
+                        item.product.name,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTextStyles.titleMedium,
                       ),
-                      SizedBox(
-                        width: 38,
-                        child: Text(
-                          item.quantity.toString(),
-                          textAlign: TextAlign.center,
-                          style: AppTextStyles.titleMedium,
+                      const SizedBox(height: 6),
+                      Text(
+                        '\$${item.product.price.toStringAsFixed(2)}',
+                        style: AppTextStyles.bodyLarge.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.primary,
                         ),
                       ),
-                      _QuantityButton(
-                        icon: Icons.add,
-                        onPressed: onIncrease,
-                        tooltip: 'Increase quantity',
-                      ),
-                      const Spacer(),
-                      IconButton(
-                        tooltip: 'Remove item',
-                        onPressed: onRemove,
-                        icon: const Icon(Icons.delete_outline),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          _QuantityButton(
+                            icon: Icons.remove,
+                            onPressed: onDecrease,
+                            tooltip: 'Decrease quantity',
+                          ),
+                          SizedBox(
+                            width: 38,
+                            child: Text(
+                              item.quantity.toString(),
+                              textAlign: TextAlign.center,
+                              style: AppTextStyles.titleMedium,
+                            ),
+                          ),
+                          _QuantityButton(
+                            icon: Icons.add,
+                            onPressed: onIncrease,
+                            tooltip: 'Increase quantity',
+                          ),
+                          const Spacer(),
+                          IconButton(
+                            tooltip: 'Remove item',
+                            onPressed: onRemove,
+                            icon: const Icon(Icons.delete_outline),
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }

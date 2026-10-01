@@ -1,31 +1,36 @@
 import 'package:get/get.dart';
 
 import '../../../../core/routes/app_routes.dart';
+import '../../../../data/models/order_models.dart';
+import '../../../../data/models/product_model.dart';
 import '../../../../data/models/vendor_model.dart';
-import '../../../../data/repositories/auth_repository.dart';
+import '../../../../data/repositories/order_repository.dart';
+import '../../../../data/repositories/product_repository.dart';
 import '../../../../data/repositories/vendor_repository.dart';
 import '../../../../data/services/auth_service.dart';
-import '../../../cart/controller/cart_controller.dart';
-import '../../../profile/controller/profile_controller.dart';
-import '../../../wishlist/controller/wishlist_controller.dart';
 
 enum VendorDashboardStatus { idle, loading, success, error }
 
 class VendorDashboardController extends GetxController {
   VendorDashboardController(
     this._authService,
-    this._authRepository,
     this._vendorRepository,
+    this._productRepository,
+    this._orderRepository,
   );
 
   final AuthService _authService;
-  final AuthRepository _authRepository;
   final VendorRepository _vendorRepository;
+  final ProductRepository _productRepository;
+  final OrderRepository _orderRepository;
 
   final status = VendorDashboardStatus.idle.obs;
   final vendor = Rxn<VendorModel>();
   final errorMessage = RxnString();
-  final isLoggingOut = false.obs;
+
+  final productCount = 0.obs;
+  final totalOrders = 0.obs;
+  final unitsSold = 0.obs;
 
   @override
   void onInit() {
@@ -40,18 +45,34 @@ class VendorDashboardController extends GetxController {
       return;
     }
 
-    status.value = VendorDashboardStatus.loading;
+    if (vendor.value == null) {
+      status.value = VendorDashboardStatus.loading;
+    }
     errorMessage.value = null;
 
     try {
-      final profile = await _vendorRepository.getVendorProfile(user.uid);
+      final results = await Future.wait<Object?>([
+        _vendorRepository.getVendorProfile(user.uid),
+        _productRepository.getVendorProducts(user.uid),
+        _orderRepository.getVendorOrders(user.uid),
+      ]);
+
+      final profile = results[0] as VendorModel?;
       if (profile == null) {
         errorMessage.value = 'Store profile was not found.';
         status.value = VendorDashboardStatus.error;
         return;
       }
 
+      final products = results[1] as List<ProductModel>;
+      final orders = results[2] as List<OrderModel>;
+
       vendor.value = profile;
+      productCount.value = products.length;
+      // Every order returned here contains at least one of this vendor's
+      // products; units only count this vendor's own order lines.
+      totalOrders.value = orders.length;
+      unitsSold.value = _countUnitsSold(orders, user.uid);
       status.value = VendorDashboardStatus.success;
     } catch (_) {
       errorMessage.value = 'Vendor dashboard could not be loaded.';
@@ -59,40 +80,25 @@ class VendorDashboardController extends GetxController {
     }
   }
 
+  int _countUnitsSold(List<OrderModel> orders, String vendorId) {
+    var units = 0;
+    for (final order in orders) {
+      for (final item in order.itemsForVendor(vendorId)) {
+        units += item.quantity;
+      }
+    }
+    return units;
+  }
+
   void openProducts() {
-    Get.toNamed(AppRoutes.vendorProducts);
+    Get.toNamed(AppRoutes.vendorProducts)?.then((_) => loadDashboard());
   }
 
   void addProduct() {
-    Get.toNamed(AppRoutes.vendorProductForm);
+    Get.toNamed(AppRoutes.vendorProductForm)?.then((_) => loadDashboard());
   }
 
-  void browseCustomerApp() {
-    Get.toNamed(AppRoutes.home);
-  }
-
-  Future<void> logout() async {
-    if (isLoggingOut.value) {
-      return;
-    }
-
-    isLoggingOut.value = true;
-    try {
-      if (Get.isRegistered<WishlistController>()) {
-        Get.find<WishlistController>().clearSession();
-      }
-      if (Get.isRegistered<CartController>()) {
-        Get.find<CartController>().clearSession();
-      }
-      if (Get.isRegistered<ProfileController>()) {
-        Get.find<ProfileController>().clearSession();
-      }
-      await _authRepository.signOut();
-      Get.offAllNamed(AppRoutes.login);
-    } catch (_) {
-      Get.snackbar('Logout', 'Could not logout. Try again.');
-    } finally {
-      isLoggingOut.value = false;
-    }
+  void openOrders() {
+    Get.toNamed(AppRoutes.vendorOrders)?.then((_) => loadDashboard());
   }
 }

@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../../../../core/constants/app_layout.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_palette.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../core/utils/responsive.dart';
 import '../../../../core/widgets/app_state_views.dart';
 import '../controller/vendor_dashboard_controller.dart';
 
@@ -13,7 +14,13 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.colors.background,
+      appBar: AppBar(
+        backgroundColor: context.colors.background,
+        foregroundColor: context.colors.textPrimary,
+        title: Text('Manage Store', style: AppTextStyles.titleMedium),
+        centerTitle: true,
+      ),
       body: SafeArea(
         child: Obx(() {
           switch (controller.status.value) {
@@ -29,78 +36,173 @@ class VendorDashboardView extends GetView<VendorDashboardController> {
               );
             case VendorDashboardStatus.success:
               final vendor = controller.vendor.value;
-              return LayoutBuilder(
-                builder: (context, constraints) {
-                  final horizontalPadding = constraints.maxWidth > 600
-                      ? 32.0
-                      : AppLayout.pagePadding;
-
-                  return ListView(
-                    padding: EdgeInsets.fromLTRB(
-                      horizontalPadding,
-                      32,
-                      horizontalPadding,
-                      32,
-                    ),
-                    children: [
-                      Text(
-                        vendor?.storeName ?? 'Vendor Dashboard',
-                        style: AppTextStyles.titleLarge,
+              return RefreshIndicator(
+                onRefresh: controller.loadDashboard,
+                child: ResponsiveBuilder(
+                  builder: (context, layout) {
+                    final maxContentWidth = layout.isExpanded
+                        ? Responsive.gridMaxWidth
+                        : Responsive.listMaxWidth;
+                    return ListView(
+                      padding: layout.pageInsets(
+                        maxContentWidth: maxContentWidth,
                       ),
-                      const SizedBox(height: 8),
-                      Text(
-                        vendor?.description ?? 'Manage your Avero store.',
-                        style: AppTextStyles.bodyMedium.copyWith(
-                          color: AppColors.textMuted,
+                      children: [
+                        Text(
+                          vendor?.storeName ?? 'My Store',
+                          style: AppTextStyles.titleLarge,
                         ),
-                      ),
-                      const SizedBox(height: 24),
-                      _DashboardAction(
-                        icon: Icons.inventory_2_outlined,
-                        title: 'My Products',
-                        subtitle: 'View, edit, or delete store products',
-                        onTap: controller.openProducts,
-                      ),
-                      const SizedBox(height: 12),
-                      _DashboardAction(
-                        icon: Icons.add_box_outlined,
-                        title: 'Add Product',
-                        subtitle: 'Create a new product in the catalog',
-                        onTap: controller.addProduct,
-                      ),
-                      const SizedBox(height: 12),
-                      _DashboardAction(
-                        icon: Icons.storefront_outlined,
-                        title: 'Browse Customer App',
-                        subtitle: 'Open the customer shopping experience',
-                        onTap: controller.browseCustomerApp,
-                      ),
-                      const SizedBox(height: 24),
-                      SizedBox(
-                        height: AppLayout.buttonHeight,
-                        child: Obx(
-                          () => OutlinedButton.icon(
-                            onPressed: controller.isLoggingOut.value
-                                ? null
-                                : controller.logout,
-                            icon: controller.isLoggingOut.value
-                                ? const SizedBox.square(
-                                    dimension: 16,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                    ),
-                                  )
-                                : const Icon(Icons.logout),
-                            label: const Text('Logout'),
+                        if (vendor != null &&
+                            vendor.description.isNotEmpty) ...[
+                          const SizedBox(height: 8),
+                          Text(
+                            vendor.description,
+                            style: AppTextStyles.bodyMedium.copyWith(
+                              color: context.colors.textMuted,
+                            ),
                           ),
+                        ],
+                        const SizedBox(height: 24),
+                        _ResponsiveWrap(
+                          minItemWidth: MediaQuery.textScalerOf(
+                            context,
+                          ).scale(88),
+                          maxColumns: 3,
+                          children: [
+                            _StatTile(
+                              label: 'Products',
+                              value: controller.productCount.value,
+                            ),
+                            _StatTile(
+                              label: 'Orders',
+                              value: controller.totalOrders.value,
+                            ),
+                            _StatTile(
+                              label: 'Units Sold',
+                              value: controller.unitsSold.value,
+                            ),
+                          ],
                         ),
-                      ),
-                    ],
-                  );
-                },
+                        const SizedBox(height: 24),
+                        _ResponsiveWrap(
+                          minItemWidth: 320,
+                          maxColumns: 3,
+                          children: [
+                            _DashboardAction(
+                              icon: Icons.inventory_2_outlined,
+                              title: 'My Products',
+                              subtitle: 'View, edit, or delete store products',
+                              onTap: controller.openProducts,
+                            ),
+                            _DashboardAction(
+                              icon: Icons.add_box_outlined,
+                              title: 'Add Product',
+                              subtitle: 'Create a new product in the catalog',
+                              onTap: controller.addProduct,
+                            ),
+                            _DashboardAction(
+                              icon: Icons.receipt_long_outlined,
+                              title: 'Orders',
+                              subtitle: 'Orders that include your products',
+                              onTap: controller.openOrders,
+                            ),
+                          ],
+                        ),
+                      ],
+                    );
+                  },
+                ),
               );
           }
         }),
+      ),
+    );
+  }
+}
+
+/// Lays children out in as many equal columns as fit (up to [maxColumns]).
+/// A last item that would sit alone in its row stretches to full width.
+class _ResponsiveWrap extends StatelessWidget {
+  const _ResponsiveWrap({
+    required this.children,
+    required this.minItemWidth,
+    this.maxColumns = 3,
+  });
+
+  final List<Widget> children;
+  final double minItemWidth;
+  final int maxColumns;
+
+  static const _spacing = 12.0;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        final columns = ((width + _spacing) / (minItemWidth + _spacing))
+            .floor()
+            .clamp(1, maxColumns);
+        final itemWidth = (width - (_spacing * (columns - 1))) / columns;
+
+        return Wrap(
+          spacing: _spacing,
+          runSpacing: _spacing,
+          children: [
+            for (var index = 0; index < children.length; index += 1)
+              SizedBox(
+                width:
+                    index == children.length - 1 &&
+                        children.length % columns == 1 &&
+                        columns > 1
+                    ? width
+                    : itemWidth,
+                child: children[index],
+              ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _StatTile extends StatelessWidget {
+  const _StatTile({required this.label, required this.value});
+
+  final String label;
+  final int value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+      decoration: BoxDecoration(
+        color: context.colors.surface,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              value.toString(),
+              style: AppTextStyles.titleLarge.copyWith(
+                color: AppColors.primary,
+              ),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: AppTextStyles.bodyMedium.copyWith(
+              color: context.colors.textMuted,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -122,19 +224,21 @@ class _DashboardAction extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: AppColors.surface,
+      color: context.colors.surface,
       borderRadius: BorderRadius.circular(8),
       child: ListTile(
         onTap: onTap,
         leading: CircleAvatar(
-          backgroundColor: Colors.white,
+          backgroundColor: context.colors.background,
           foregroundColor: AppColors.primary,
           child: Icon(icon),
         ),
         title: Text(title, style: AppTextStyles.titleMedium),
         subtitle: Text(
           subtitle,
-          style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textMuted),
+          style: AppTextStyles.bodyMedium.copyWith(
+            color: context.colors.textMuted,
+          ),
         ),
         trailing: const Icon(Icons.chevron_right),
       ),

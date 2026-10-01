@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../../core/constants/app_layout.dart';
-import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_palette.dart';
 import '../../../../core/theme/app_text_styles.dart';
-import '../../../../core/widgets/unfocus_on_tap.dart';
+import '../../../../core/utils/responsive.dart';
+import '../../../../core/widgets/phone_number_field.dart';
 import '../controller/become_vendor_controller.dart';
 
 class BecomeVendorView extends GetView<BecomeVendorController> {
@@ -12,23 +13,25 @@ class BecomeVendorView extends GetView<BecomeVendorController> {
 
   @override
   Widget build(BuildContext context) {
-    return UnfocusOnTap(
-      child: Scaffold(
-        backgroundColor: AppColors.background,
-        appBar: AppBar(
-          backgroundColor: AppColors.background,
-          foregroundColor: AppColors.textPrimary,
-          title: Text('Become a Vendor', style: AppTextStyles.titleMedium),
-          centerTitle: true,
-        ),
-        body: SafeArea(
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+    return Scaffold(
+      backgroundColor: context.colors.background,
+      appBar: AppBar(
+        backgroundColor: context.colors.background,
+        foregroundColor: context.colors.textPrimary,
+        title: Text('Become a Vendor', style: AppTextStyles.titleMedium),
+        centerTitle: true,
+      ),
+      body: SafeArea(
+        child: ResponsiveBuilder(
+          builder: (context, layout) => ListView(
+            padding: layout.pageInsets(
+              maxContentWidth: Responsive.formMaxWidth,
+            ),
             children: [
               Text(
                 'Create your store profile and start managing products.',
                 style: AppTextStyles.bodyLarge.copyWith(
-                  color: AppColors.textMuted,
+                  color: context.colors.textMuted,
                 ),
               ),
               const SizedBox(height: 24),
@@ -44,7 +47,13 @@ class BecomeVendorView extends GetView<BecomeVendorController> {
                 controller: controller.emailController,
                 label: 'Contact email',
               ),
-              _Input(controller: controller.phoneController, label: 'Phone'),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: PhoneNumberField(
+                  controller: controller.phoneController,
+                  onChanged: controller.onPhoneChanged,
+                ),
+              ),
               _Input(
                 controller: controller.descriptionController,
                 label: 'Store description',

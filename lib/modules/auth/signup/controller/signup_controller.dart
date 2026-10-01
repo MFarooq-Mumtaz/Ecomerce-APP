@@ -7,39 +7,36 @@ import '../../../../data/repositories/user_repository.dart';
 import '../../../../data/services/auth_service.dart';
 
 class SignupController extends GetxController {
-  SignupController(
-    this._authRepository,
-    this._authService,
-    this._userRepository,
-  );
+  SignupController(this._authRepository, this._authService);
 
   final AuthRepository _authRepository;
   final AuthService _authService;
-  final UserRepository _userRepository;
 
+  final formKey = GlobalKey<FormState>();
   final firstNameController = TextEditingController();
   final lastNameController = TextEditingController();
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
+  final confirmPasswordController = TextEditingController();
 
   final isPasswordVisible = false.obs;
+  final isConfirmPasswordVisible = false.obs;
   final isLoading = false.obs;
   final errorMessage = RxnString();
-  final successMessage = RxnString();
 
   Future<void> signUp() async {
     if (isLoading.value) {
       return;
     }
 
-    final validationMessage = _validate();
-    if (validationMessage != null) {
-      _showError(validationMessage);
+    errorMessage.value = null;
+    // Firebase signup only runs after every field passes validation.
+    if (!(formKey.currentState?.validate() ?? false)) {
       return;
     }
 
+    FocusManager.instance.primaryFocus?.unfocus();
     isLoading.value = true;
-    _clearMessages();
 
     try {
       await _authRepository.signUpWithEmailPassword(
@@ -48,11 +45,13 @@ class SignupController extends GetxController {
         email: emailController.text.trim(),
         password: passwordController.text,
       );
-      await _routeAfterAuth();
+      Get.offAllNamed(
+        _authService.currentUser == null ? AppRoutes.login : AppRoutes.home,
+      );
     } on AuthFailure catch (failure) {
-      _showError(failure.message);
+      errorMessage.value = failure.message;
     } on UserProfileFailure catch (failure) {
-      _showError(failure.message);
+      errorMessage.value = failure.message;
     } finally {
       isLoading.value = false;
     }
@@ -62,61 +61,13 @@ class SignupController extends GetxController {
     isPasswordVisible.toggle();
   }
 
+  void toggleConfirmPasswordVisibility() {
+    isConfirmPasswordVisible.toggle();
+  }
+
   void goBackToLogin() {
     FocusManager.instance.primaryFocus?.unfocus();
     Get.back();
-  }
-
-  Future<void> _routeAfterAuth() async {
-    final user = _authService.currentUser;
-    if (user == null) {
-      Get.offAllNamed(AppRoutes.login);
-      return;
-    }
-
-    final profile = await _userRepository.getUserProfile(user.uid);
-    Get.offAllNamed(
-      profile.isVendor ? AppRoutes.vendorDashboard : AppRoutes.home,
-    );
-  }
-
-  String? _validate() {
-    if (firstNameController.text.trim().isEmpty) {
-      return 'Enter your first name.';
-    }
-
-    if (lastNameController.text.trim().isEmpty) {
-      return 'Enter your last name.';
-    }
-
-    final email = emailController.text.trim();
-    if (email.isEmpty) {
-      return 'Enter your email address.';
-    }
-
-    if (!GetUtils.isEmail(email)) {
-      return 'Enter a valid email address.';
-    }
-
-    if (passwordController.text.isEmpty) {
-      return 'Enter your password.';
-    }
-
-    if (passwordController.text.length < 6) {
-      return 'Use at least 6 characters for your password.';
-    }
-
-    return null;
-  }
-
-  void _clearMessages() {
-    errorMessage.value = null;
-    successMessage.value = null;
-  }
-
-  void _showError(String message) {
-    successMessage.value = null;
-    errorMessage.value = message;
   }
 
   @override
@@ -125,6 +76,7 @@ class SignupController extends GetxController {
     lastNameController.dispose();
     emailController.dispose();
     passwordController.dispose();
+    confirmPasswordController.dispose();
     super.onClose();
   }
 }

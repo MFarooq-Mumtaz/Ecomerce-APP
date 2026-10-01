@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_palette.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../data/models/category_model.dart';
 
@@ -33,7 +34,7 @@ class CategoryItem extends StatelessWidget {
               height: 56,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: isSelected ? AppColors.primary : AppColors.surface,
+                color: isSelected ? AppColors.primary : context.colors.surface,
                 border: isSelected
                     ? Border.all(color: AppColors.primary, width: 2)
                     : null,
@@ -42,7 +43,9 @@ class CategoryItem extends StatelessWidget {
               child: imageUrl == null || imageUrl.isEmpty
                   ? Icon(
                       Icons.category_outlined,
-                      color: isSelected ? Colors.white : AppColors.textMuted,
+                      color: isSelected
+                          ? Colors.white
+                          : context.colors.textMuted,
                     )
                   : _CategoryImage(imagePath: imageUrl, isSelected: isSelected),
             ),
@@ -71,7 +74,7 @@ class _CategoryImage extends StatelessWidget {
   Widget build(BuildContext context) {
     final fallbackIcon = Icon(
       Icons.category_outlined,
-      color: isSelected ? Colors.white : AppColors.textMuted,
+      color: isSelected ? Colors.white : context.colors.textMuted,
     );
 
     if (imagePath.startsWith('assets/')) {

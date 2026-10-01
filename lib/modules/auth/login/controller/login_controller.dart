@@ -3,20 +3,16 @@ import 'package:get/get.dart';
 
 import '../../../../core/routes/app_routes.dart';
 import '../../../../data/repositories/auth_repository.dart';
-import '../../../../data/services/auth_service.dart';
 import '../../../../data/repositories/user_repository.dart';
+import '../../../../data/services/auth_service.dart';
 
 class LoginController extends GetxController {
-  LoginController(
-    this._authRepository,
-    this._authService,
-    this._userRepository,
-  );
+  LoginController(this._authRepository, this._authService);
 
   final AuthRepository _authRepository;
   final AuthService _authService;
-  final UserRepository _userRepository;
 
+  final formKey = GlobalKey<FormState>();
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
 
@@ -24,7 +20,6 @@ class LoginController extends GetxController {
   final isEmailLoading = false.obs;
   final isGoogleLoading = false.obs;
   final errorMessage = RxnString();
-  final successMessage = RxnString();
 
   bool get _isBusy => isEmailLoading.value || isGoogleLoading.value;
 
@@ -33,25 +28,25 @@ class LoginController extends GetxController {
       return;
     }
 
-    final validationMessage = _validateEmailPassword();
-    if (validationMessage != null) {
-      _showError(validationMessage);
+    errorMessage.value = null;
+    // Inline validation runs first; Firebase is never called with bad input.
+    if (!(formKey.currentState?.validate() ?? false)) {
       return;
     }
 
+    FocusManager.instance.primaryFocus?.unfocus();
     isEmailLoading.value = true;
-    _clearMessages();
 
     try {
       await _authRepository.signInWithEmailPassword(
-        email: emailController.text,
+        email: emailController.text.trim(),
         password: passwordController.text,
       );
-      await _routeAfterAuth();
+      _routeAfterAuth();
     } on AuthFailure catch (failure) {
-      _showError(failure.message);
+      errorMessage.value = failure.message;
     } on UserProfileFailure catch (failure) {
-      _showError(failure.message);
+      errorMessage.value = failure.message;
     } finally {
       isEmailLoading.value = false;
     }
@@ -63,17 +58,17 @@ class LoginController extends GetxController {
     }
 
     isGoogleLoading.value = true;
-    _clearMessages();
+    errorMessage.value = null;
 
     try {
       await _authRepository.signInWithGoogle();
-      await _routeAfterAuth();
+      _routeAfterAuth();
     } on AuthFailure catch (failure) {
       if (!failure.isCancellation) {
-        _showError(failure.message);
+        errorMessage.value = failure.message;
       }
     } on UserProfileFailure catch (failure) {
-      _showError(failure.message);
+      errorMessage.value = failure.message;
     } finally {
       isGoogleLoading.value = false;
     }
@@ -84,50 +79,25 @@ class LoginController extends GetxController {
     Get.toNamed(AppRoutes.signup);
   }
 
+  void goToForgotPassword() {
+    FocusManager.instance.primaryFocus?.unfocus();
+    Get.toNamed(
+      AppRoutes.forgotPassword,
+      arguments: emailController.text.trim(),
+    );
+  }
+
   void togglePasswordVisibility() {
     isPasswordVisible.toggle();
   }
 
-  Future<void> _routeAfterAuth() async {
-    final user = _authService.currentUser;
-    if (user == null) {
+  /// Customers and vendors both land on Home after login.
+  void _routeAfterAuth() {
+    if (_authService.currentUser == null) {
       Get.offAllNamed(AppRoutes.login);
       return;
     }
-
-    final profile = await _userRepository.getUserProfile(user.uid);
-    Get.offAllNamed(
-      profile.isVendor ? AppRoutes.vendorDashboard : AppRoutes.home,
-    );
-  }
-
-  String? _validateEmailPassword() {
-    final email = emailController.text.trim();
-    final password = passwordController.text;
-
-    if (email.isEmpty) {
-      return 'Enter your email address.';
-    }
-
-    if (!GetUtils.isEmail(email)) {
-      return 'Enter a valid email address.';
-    }
-
-    if (password.isEmpty) {
-      return 'Enter your password.';
-    }
-
-    return null;
-  }
-
-  void _clearMessages() {
-    errorMessage.value = null;
-    successMessage.value = null;
-  }
-
-  void _showError(String message) {
-    successMessage.value = null;
-    errorMessage.value = message;
+    Get.offAllNamed(AppRoutes.home);
   }
 
   @override

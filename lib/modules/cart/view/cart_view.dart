@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../../../core/constants/app_layout.dart';
 import '../../../core/routes/app_routes.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_palette.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/utils/responsive.dart';
 import '../../../core/widgets/app_state_views.dart';
 import '../controller/cart_controller.dart';
 import '../widgets/cart_item_tile.dart';
@@ -15,10 +16,10 @@ class CartView extends GetView<CartController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.colors.background,
       appBar: AppBar(
-        backgroundColor: AppColors.background,
-        foregroundColor: AppColors.textPrimary,
+        backgroundColor: context.colors.background,
+        foregroundColor: context.colors.textPrimary,
         title: Obx(
           () => Text(
             'Cart (${controller.itemCount})',
@@ -52,26 +53,25 @@ class CartView extends GetView<CartController> {
                   Expanded(
                     child: RefreshIndicator(
                       onRefresh: controller.loadCart,
-                      child: ListView.separated(
-                        padding: const EdgeInsets.fromLTRB(
-                          AppLayout.pagePadding,
-                          24,
-                          AppLayout.pagePadding,
-                          24,
+                      child: ResponsiveBuilder(
+                        builder: (context, layout) => ListView.separated(
+                          padding: layout.pageInsets(top: 24, bottom: 24),
+                          itemCount: controller.items.length,
+                          separatorBuilder: (context, index) =>
+                              const SizedBox(height: 12),
+                          itemBuilder: (context, index) {
+                            final item = controller.items[index];
+                            return CartItemTile(
+                              item: item,
+                              onIncrease: () =>
+                                  controller.increaseQuantity(item),
+                              onDecrease: () =>
+                                  controller.decreaseQuantity(item),
+                              onRemove: () =>
+                                  controller.removeProduct(item.product),
+                            );
+                          },
                         ),
-                        itemCount: controller.items.length,
-                        separatorBuilder: (context, index) =>
-                            const SizedBox(height: 12),
-                        itemBuilder: (context, index) {
-                          final item = controller.items[index];
-                          return CartItemTile(
-                            item: item,
-                            onIncrease: () => controller.increaseQuantity(item),
-                            onDecrease: () => controller.decreaseQuantity(item),
-                            onRemove: () =>
-                                controller.removeProduct(item.product),
-                          );
-                        },
                       ),
                     ),
                   ),
@@ -93,12 +93,13 @@ class _CartSummary extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-      decoration: const BoxDecoration(
-        color: AppColors.background,
-        border: Border(top: BorderSide(color: AppColors.surface)),
+      decoration: BoxDecoration(
+        color: context.colors.background,
+        border: Border(top: BorderSide(color: context.colors.surface)),
       ),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+      child: ResponsiveCenter(
+        top: 16,
+        bottom: 24,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [

@@ -15,7 +15,7 @@ class OrderRepository {
 
   final FirestoreService _firestoreService;
 
-  Future<PlaceOrderResult> placeOrder({
+  Future<PlaceOrderResult> createOrder({
     required PlaceOrderDraft draft,
     required List<CartProductItem> cartItems,
   }) async {
@@ -24,58 +24,76 @@ class OrderRepository {
     }
 
     try {
-      final productIds = cartItems.map((item) => item.product.id).toList();
-      final quantityByProductId = {
-        for (final item in cartItems) item.product.id: item.quantity,
-      };
-      final subtotal = cartItems.fold<double>(
-        0,
-        (total, item) => total + item.lineTotal,
-      );
-      final itemCount = cartItems.fold<int>(
-        0,
-        (total, item) => total + item.quantity,
-      );
-      final total = subtotal + draft.shipping;
-
       final orderId = await _firestoreService.createOrderFromCart(
         uid: draft.customerId,
-        productIds: productIds,
-        orderDataBuilder: (orderId) => <String, Object?>{
-          'id': orderId,
-          'customerId': draft.customerId,
-          'customerEmail': draft.customerEmail,
-          'customerName': draft.customerName,
-          'status': 'pending',
-          'subtotal': subtotal,
-          'shipping': draft.shipping,
-          'total': total,
-          'itemCount': itemCount,
-          'deliveryAddress': draft.address.toOrderSnapshot(),
-          'createdAt': FieldValue.serverTimestamp(),
-          'updatedAt': FieldValue.serverTimestamp(),
-        },
-        itemDataBuilder: (productId, productData, quantity) {
-          final unitPrice = (productData['price'] as num?)?.toDouble() ?? 0;
-          return OrderItemSnapshot(
-            productId: productId,
-            vendorId: productData['vendorId'] as String? ?? '',
-            productName: productData['name'] as String? ?? '',
-            imageUrl: productData['imageUrl'] as String?,
-            quantity: quantityByProductId[productId] ?? quantity,
-            unitPrice: unitPrice,
-            lineTotal: unitPrice * (quantityByProductId[productId] ?? quantity),
-          ).toMap();
+        productIds: cartItems.map((item) => item.product.id).toList(),
+        orderDataBuilder: (orderId, lines) {
+          // Prices and vendor ids come from the product documents read inside
+          // the transaction, not from the cached cart on the device.
+          final items = lines.map(_buildItem).toList();
+          final vendorIds = items.map((item) => item.vendorId).toSet().toList();
+          final subtotal = items.fold<double>(
+            0,
+            (total, item) => total + item.lineTotal,
+          );
+          final itemCount = items.fold<int>(
+            0,
+            (total, item) => total + item.quantity,
+          );
+
+          return <String, Object?>{
+            'orderId': orderId,
+            'customerId': draft.customerId,
+            'vendorIds': vendorIds,
+            'items': items.map((item) => item.toMap()).toList(),
+            'itemCount': itemCount,
+            'deliveryAddress': draft.address.toOrderSnapshot(),
+            'subtotal': subtotal,
+            'total': subtotal,
+            'status': OrderModel.pendingStatus,
+            'createdAt': FieldValue.serverTimestamp(),
+            'updatedAt': FieldValue.serverTimestamp(),
+          };
         },
       );
 
       return PlaceOrderResult(orderId: orderId);
-    } on OrderFailure {
-      rethrow;
     } on StateError catch (error) {
       throw OrderFailure(error.message);
     } catch (_) {
       throw const OrderFailure('Order could not be placed. Please try again.');
     }
+  }
+
+  /// Orders that contain at least one product from [vendorId], newest first.
+  Future<List<OrderModel>> getVendorOrders(String vendorId) async {
+    final snapshot = await _firestoreService.getVendorOrders(vendorId);
+    final orders = snapshot.docs.map(OrderModel.fromFirestore).toList()
+      ..sort((a, b) {
+        final aDate = a.createdAt;
+        final bDate = b.createdAt;
+        if (aDate == null || bDate == null) {
+          return 0;
+        }
+        return bDate.compareTo(aDate);
+      });
+    return orders;
+  }
+
+  OrderItemSnapshot _buildItem(CartOrderLine line) {
+    final data = line.productData;
+    final unitPrice = (data['price'] as num?)?.toDouble() ?? 0;
+    return OrderItemSnapshot(
+      productId: line.productId,
+      vendorId: data['vendorId'] as String? ?? '',
+      productName: data['name'] as String? ?? '',
+      imageUrl: data['imageUrl'] as String?,
+      localImagePath: data['localImagePath'] as String?,
+      categoryId: data['categoryId'] as String?,
+      categoryName: data['categoryName'] as String?,
+      quantity: line.quantity,
+      unitPrice: unitPrice,
+      lineTotal: unitPrice * line.quantity,
+    );
   }
 }

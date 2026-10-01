@@ -1,24 +1,65 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_palette.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/utils/responsive.dart';
 import '../../../core/widgets/product_image.dart';
 import '../../../data/models/product_model.dart';
 
 class ProductCard extends StatelessWidget {
   const ProductCard({
     required this.product,
-    required this.width,
     required this.onTap,
     required this.isWishlisted,
     required this.isInCart,
     required this.onWishlistTap,
     required this.onCartTap,
     super.key,
+    this.width,
   });
 
+  /// Image ratio from the Avero design (159 x 220).
+  static const imageAspectRatio = 159 / 220;
+
+  /// Height a card needs at [width], including the name/price area for the
+  /// current text scale. Grids and horizontal lists use this so a card
+  /// never overflows, on any screen or font size.
+  static double heightFor(double width, TextScaler textScaler) {
+    final lineHeight =
+        textScaler.scale(AppTextStyles.bodyMedium.fontSize!) *
+        AppTextStyles.bodyMedium.height!;
+    final infoHeight = 8 + lineHeight + 6 + math.max(24, lineHeight) + 14;
+    return (width / imageAspectRatio) + infoHeight + 2;
+  }
+
+  /// Grid layout for product cards: phones get 2 columns, wider screens get
+  /// more, and every row is tall enough for the card at that width.
+  static SliverGridDelegate gridDelegate(
+    Responsive layout,
+    TextScaler textScaler, {
+    double spacing = 16,
+  }) {
+    final columns = layout.columnsFor(
+      minItemWidth: layout.isCompact ? 136 : 160,
+      spacing: spacing,
+      minColumns: 2,
+    );
+    final itemWidth = layout.itemWidth(columns: columns, spacing: spacing);
+    return SliverGridDelegateWithFixedCrossAxisCount(
+      crossAxisCount: columns,
+      mainAxisSpacing: spacing,
+      crossAxisSpacing: spacing,
+      mainAxisExtent: heightFor(itemWidth, textScaler),
+    );
+  }
+
   final ProductModel product;
-  final double width;
+
+  /// Fixed width for horizontal lists; null fills the parent (grids).
+  final double? width;
   final VoidCallback onTap;
   final bool isWishlisted;
   final bool isInCart;
@@ -30,7 +71,7 @@ class ProductCard extends StatelessWidget {
     return SizedBox(
       width: width,
       child: Material(
-        color: AppColors.surface,
+        color: context.colors.surface,
         borderRadius: BorderRadius.circular(8),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
@@ -38,8 +79,9 @@ class ProductCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              AspectRatio(
-                aspectRatio: 159 / 220,
+              // The image takes whatever height is left after the text, so
+              // the card fits the exact size its parent gives it.
+              Expanded(
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
@@ -94,7 +136,7 @@ class ProductCard extends StatelessWidget {
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: AppTextStyles.bodyMedium.copyWith(
-                                      color: AppColors.textMuted,
+                                      color: context.colors.textMuted,
                                       decoration: TextDecoration.lineThrough,
                                     ),
                                   ),
@@ -144,7 +186,9 @@ class _CircleActionButton extends StatelessWidget {
           child: SizedBox(
             width: 28,
             height: 28,
-            child: Icon(icon, size: 18, color: AppColors.textPrimary),
+            // The circle is always light, so the icon stays dark in both
+            // theme modes.
+            child: Icon(icon, size: 18, color: AppPalette.light.textPrimary),
           ),
         ),
       ),
@@ -163,18 +207,19 @@ class _CartButton extends StatelessWidget {
     return Tooltip(
       message: isInCart ? 'Add one more' : 'Add to cart',
       child: Material(
-        color: isInCart ? AppColors.primary : AppColors.textPrimary,
+        color: isInCart ? AppColors.primary : context.colors.textPrimary,
         borderRadius: BorderRadius.circular(8),
         child: InkWell(
           borderRadius: BorderRadius.circular(8),
           onTap: onTap,
-          child: const SizedBox(
+          child: SizedBox(
             width: 24,
             height: 24,
             child: Icon(
               Icons.shopping_bag_outlined,
               size: 16,
-              color: Colors.white,
+              // Contrasts with the button color in light and dark mode.
+              color: isInCart ? Colors.white : context.colors.background,
             ),
           ),
         ),

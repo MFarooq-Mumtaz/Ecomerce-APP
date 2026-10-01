@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_palette.dart';
 import '../../../core/theme/app_text_styles.dart';
 
 class HomeSearchField extends StatelessWidget {
@@ -38,7 +39,7 @@ class HomeSearchField extends StatelessWidget {
               : null,
           contentPadding: const EdgeInsets.symmetric(horizontal: 16),
           filled: true,
-          fillColor: AppColors.surface,
+          fillColor: context.colors.surface,
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(100),
             borderSide: BorderSide.none,

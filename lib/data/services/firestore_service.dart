@@ -1,5 +1,18 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+/// Product data read inside the place-order transaction.
+class CartOrderLine {
+  const CartOrderLine({
+    required this.productId,
+    required this.productData,
+    required this.quantity,
+  });
+
+  final String productId;
+  final Map<String, dynamic> productData;
+  final int quantity;
+}
+
 class FirestoreService {
   FirestoreService({FirebaseFirestore? firestore})
     : _firestore = firestore ?? FirebaseFirestore.instance;
@@ -39,7 +52,7 @@ class FirestoreService {
   }
 
   Future<QuerySnapshot<Map<String, dynamic>>> getActiveProducts() {
-    return products.where('isActive', isEqualTo: true).limit(50).get();
+    return products.where('isActive', isEqualTo: true).limit(200).get();
   }
 
   Future<QuerySnapshot<Map<String, dynamic>>> getActiveProductsByCategory(
@@ -204,19 +217,18 @@ class FirestoreService {
   Future<String> createOrderFromCart({
     required String uid,
     required List<String> productIds,
-    required Map<String, Object?> Function(String orderId) orderDataBuilder,
     required Map<String, Object?> Function(
-      String productId,
-      Map<String, dynamic> productData,
-      int quantity,
+      String orderId,
+      List<CartOrderLine> lines,
     )
-    itemDataBuilder,
+    orderDataBuilder,
   }) async {
     final orderDocument = orders.doc();
     final cartDocuments = productIds.map((id) => cart(uid).doc(id)).toList();
     final productDocuments = productIds.map((id) => products.doc(id)).toList();
 
     await _firestore.runTransaction((transaction) async {
+      // Firestore transactions need every read before the first write.
       final cartSnapshots = <DocumentSnapshot<Map<String, dynamic>>>[];
       for (final cartDocument in cartDocuments) {
         cartSnapshots.add(await transaction.get(cartDocument));
@@ -227,50 +239,64 @@ class FirestoreService {
         productSnapshots.add(await transaction.get(productDocument));
       }
 
-      final orderItems = <Map<String, Object?>>[];
+      final lines = <CartOrderLine>[];
       for (var index = 0; index < productIds.length; index += 1) {
         final cartSnapshot = cartSnapshots[index];
         final productSnapshot = productSnapshots[index];
-        final productId = productIds[index];
 
         if (!cartSnapshot.exists) {
-          throw StateError('Cart item is no longer available.');
+          throw StateError('Your cart changed. Please review it again.');
         }
         if (!productSnapshot.exists) {
-          throw StateError('A product is no longer available.');
+          throw StateError('A product in your cart is no longer available.');
         }
 
         final cartData = cartSnapshot.data() ?? <String, dynamic>{};
         final productData = productSnapshot.data() ?? <String, dynamic>{};
+        final productName = productData['name'] as String? ?? 'A product';
         final quantity = (cartData['quantity'] as num?)?.toInt() ?? 0;
         final stock = (productData['stock'] as num?)?.toInt();
         final isActive = productData['isActive'] as bool? ?? false;
         final vendorId = productData['vendorId'] as String? ?? '';
 
         if (quantity < 1) {
-          throw StateError('Cart quantity is invalid.');
+          throw StateError('Cart quantity for $productName is invalid.');
         }
         if (!isActive) {
-          throw StateError('A product is no longer active.');
+          throw StateError('$productName is no longer available.');
         }
         if (vendorId.trim().isEmpty) {
-          throw StateError('A product is missing vendor information.');
+          throw StateError('$productName is missing store information.');
         }
-        if (stock != null) {
-          if (stock < quantity) {
-            throw StateError('A product does not have enough stock.');
-          }
+        if (stock != null && stock < quantity) {
+          throw StateError(
+            stock <= 0
+                ? '$productName is out of stock.'
+                : 'Only $stock of $productName left in stock.',
+          );
         }
 
-        final itemData = itemDataBuilder(productId, productData, quantity);
-        orderItems.add(itemData);
+        lines.add(
+          CartOrderLine(
+            productId: productIds[index],
+            productData: productData,
+            quantity: quantity,
+          ),
+        );
       }
 
-      final orderData = orderDataBuilder(orderDocument.id);
-      transaction.set(orderDocument, <String, Object?>{
-        ...orderData,
-        'items': orderItems,
-      });
+      transaction.set(orderDocument, orderDataBuilder(orderDocument.id, lines));
+
+      for (var index = 0; index < lines.length; index += 1) {
+        final line = lines[index];
+        final stock = (line.productData['stock'] as num?)?.toInt();
+        final soldCount = (line.productData['soldCount'] as num?)?.toInt() ?? 0;
+        transaction.update(productDocuments[index], <Object, Object?>{
+          if (stock != null) 'stock': stock - line.quantity,
+          'soldCount': soldCount + line.quantity,
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+      }
 
       for (final cartDocument in cartDocuments) {
         transaction.delete(cartDocument);
@@ -278,6 +304,10 @@ class FirestoreService {
     });
 
     return orderDocument.id;
+  }
+
+  Future<QuerySnapshot<Map<String, dynamic>>> getVendorOrders(String vendorId) {
+    return orders.where('vendorIds', arrayContains: vendorId).limit(200).get();
   }
 
   Future<DocumentSnapshot<Map<String, dynamic>>> getVendorDocument(String uid) {

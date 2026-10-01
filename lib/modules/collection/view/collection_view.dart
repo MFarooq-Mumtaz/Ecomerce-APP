@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../../../core/constants/app_layout.dart';
-import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_palette.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/utils/responsive.dart';
 import '../../../core/widgets/app_state_views.dart';
 import '../../../core/widgets/product_image.dart';
 import '../../../data/models/category_model.dart';
@@ -21,12 +21,12 @@ class CollectionView extends GetView<CollectionController> {
     final cartController = Get.find<CartController>();
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.colors.background,
       appBar: AppBar(
-        backgroundColor: AppColors.background,
-        foregroundColor: AppColors.textPrimary,
+        backgroundColor: context.colors.background,
+        foregroundColor: context.colors.textPrimary,
         leading: Obx(
-          () => controller.category == null
+          () => !controller.isShowingProducts
               ? const SizedBox.shrink()
               : IconButton(
                   tooltip: 'Collections',
@@ -35,10 +35,7 @@ class CollectionView extends GetView<CollectionController> {
                 ),
         ),
         title: Obx(
-          () => Text(
-            controller.category?.name ?? 'Collections',
-            style: AppTextStyles.titleMedium,
-          ),
+          () => Text(controller.title, style: AppTextStyles.titleMedium),
         ),
         centerTitle: true,
       ),
@@ -53,50 +50,40 @@ class CollectionView extends GetView<CollectionController> {
                 message:
                     controller.errorMessage.value ??
                     'Collection could not be loaded.',
-                onRetry: controller.category == null
-                    ? controller.loadCategories
-                    : controller.loadProducts,
+                onRetry: controller.isShowingProducts
+                    ? controller.loadProducts
+                    : controller.loadCategories,
               );
             case CollectionLoadStatus.empty:
               return AppEmptyState(
-                title: controller.category == null
+                title: !controller.isShowingProducts
                     ? 'No collections yet'
+                    : controller.isTopSelling.value
+                    ? 'No best sellers yet'
                     : 'No products yet',
-                message: controller.category == null
+                message: !controller.isShowingProducts
                     ? 'Collections will appear here once they are added.'
-                    : '${controller.category?.name ?? 'This collection'} products will appear here.',
+                    : controller.isTopSelling.value
+                    ? 'Best sellers will appear here once orders are placed.'
+                    : '${controller.title} products will appear here.',
                 icon: Icons.inventory_2_outlined,
               );
             case CollectionLoadStatus.success:
-              if (controller.category == null) {
+              if (!controller.isShowingProducts) {
                 return _CategoryBrowser(controller: controller);
               }
 
               return RefreshIndicator(
                 onRefresh: controller.loadProducts,
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    final crossAxisCount = constraints.maxWidth > 560 ? 3 : 2;
-                    final cardWidth =
-                        ((constraints.maxWidth -
-                                    (AppLayout.pagePadding * 2) -
-                                    ((crossAxisCount - 1) * 16)) /
-                                crossAxisCount)
-                            .clamp(150.0, 190.0)
-                            .toDouble();
-
+                child: ResponsiveBuilder(
+                  builder: (context, layout) {
                     return GridView.builder(
-                      padding: const EdgeInsets.fromLTRB(
-                        AppLayout.pagePadding,
-                        16,
-                        AppLayout.pagePadding,
-                        32,
+                      padding: layout.pageInsets(
+                        maxContentWidth: Responsive.gridMaxWidth,
                       ),
-                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: crossAxisCount,
-                        mainAxisSpacing: 16,
-                        crossAxisSpacing: 16,
-                        childAspectRatio: cardWidth / (cardWidth * 1.9),
+                      gridDelegate: ProductCard.gridDelegate(
+                        layout,
+                        MediaQuery.textScalerOf(context),
                       ),
                       itemCount: controller.products.length,
                       itemBuilder: (context, index) {
@@ -104,7 +91,6 @@ class CollectionView extends GetView<CollectionController> {
                         return Obx(
                           () => ProductCard(
                             product: product,
-                            width: cardWidth,
                             onTap: () => controller.openProduct(product),
                             isWishlisted: wishlistController.isWishlisted(
                               product.id,
@@ -136,22 +122,23 @@ class _CategoryBrowser extends StatelessWidget {
   Widget build(BuildContext context) {
     return RefreshIndicator(
       onRefresh: controller.loadCategories,
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final crossAxisCount = constraints.maxWidth > 560 ? 3 : 2;
-
+      child: ResponsiveBuilder(
+        builder: (context, layout) {
+          final textScaler = MediaQuery.textScalerOf(context);
           return GridView.builder(
-            padding: const EdgeInsets.fromLTRB(
-              AppLayout.pagePadding,
-              16,
-              AppLayout.pagePadding,
-              32,
+            padding: layout.pageInsets(
+              maxContentWidth: Responsive.gridMaxWidth,
             ),
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: crossAxisCount,
+              crossAxisCount: layout.columnsFor(
+                minItemWidth: 136,
+                minColumns: 2,
+              ),
               mainAxisSpacing: 16,
               crossAxisSpacing: 16,
-              childAspectRatio: 1.2,
+              // Image (64) + paddings + one 16px title line (with its line
+              // height) at the current font scale.
+              mainAxisExtent: 100 + textScaler.scale(16) * 1.6,
             ),
             itemCount: controller.categories.length,
             itemBuilder: (context, index) {
@@ -177,7 +164,7 @@ class _CategoryTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: AppColors.surface,
+      color: context.colors.surface,
       borderRadius: BorderRadius.circular(8),
       child: InkWell(
         onTap: onTap,

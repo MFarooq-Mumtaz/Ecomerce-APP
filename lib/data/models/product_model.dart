@@ -14,6 +14,7 @@ class ProductModel {
     this.vendorId,
     this.stock,
     this.compareAtPrice,
+    this.soldCount = 0,
     this.createdAt,
   });
 
@@ -29,6 +30,7 @@ class ProductModel {
   final int? stock;
   final double? compareAtPrice;
   final bool isActive;
+  final int soldCount;
   final DateTime? createdAt;
 
   factory ProductModel.fromFirestore(
@@ -48,6 +50,8 @@ class ProductModel {
       stock: (data['stock'] as num?)?.toInt(),
       compareAtPrice: (data['compareAtPrice'] as num?)?.toDouble(),
       isActive: data['isActive'] as bool? ?? true,
+      // Older seeded products may not have soldCount yet, so treat it as 0.
+      soldCount: (data['soldCount'] as num?)?.toInt() ?? 0,
       createdAt: _readTimestamp(data['createdAt']),
     );
   }
@@ -71,6 +75,7 @@ class ProductModel {
       'stock': stock ?? 0,
       'compareAtPrice': compareAtPrice,
       'isActive': isActive,
+      'soldCount': 0,
       'createdAt': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
     };

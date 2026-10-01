@@ -2,7 +2,6 @@ import 'package:get/get.dart';
 
 import '../../../data/repositories/address_repository.dart';
 import '../../../data/repositories/order_repository.dart';
-import '../../../data/repositories/user_repository.dart';
 import '../../../data/services/auth_service.dart';
 import '../../../data/services/firestore_service.dart';
 import '../../cart/controller/cart_controller.dart';
@@ -26,7 +25,6 @@ class CheckoutBinding extends Bindings {
     Get.lazyPut<CheckoutController>(
       () => CheckoutController(
         Get.find<AuthService>(),
-        Get.find<UserRepository>(),
         Get.find<AddressRepository>(),
         Get.find<OrderRepository>(),
         Get.find<CartController>(),

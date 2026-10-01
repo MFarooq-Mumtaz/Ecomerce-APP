@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import '../../../data/models/product_model.dart';
 import '../../../data/repositories/cart_repository.dart';
 import '../../../data/services/auth_service.dart';
+import '../../../core/widgets/app_snackbar.dart';
 
 enum CartLoadStatus { idle, loading, success, empty, error }
 
@@ -85,7 +86,7 @@ class CartController extends GetxController {
 
   Future<void> decreaseQuantity(CartProductItem item) {
     if (item.quantity <= 1) {
-      Get.snackbar('Cart', 'Quantity cannot go below 1.');
+      AppSnackbar.show('Cart', 'Quantity cannot go below 1.');
       return Future<void>.value();
     }
 
@@ -114,9 +115,9 @@ class CartController extends GetxController {
       status.value = items.isEmpty
           ? CartLoadStatus.empty
           : CartLoadStatus.success;
-      Get.snackbar('Cart', '${product.name} removed from cart.');
+      AppSnackbar.show('Cart', '${product.name} removed from cart.');
     } catch (_) {
-      Get.snackbar('Cart', 'Could not update cart. Try again.');
+      AppSnackbar.show('Cart', 'Could not update cart. Try again.');
     } finally {
       busyProductIds.remove(product.id);
     }
@@ -129,7 +130,7 @@ class CartController extends GetxController {
   }) async {
     final uid = _authService.currentUser?.uid;
     if (uid == null) {
-      Get.snackbar('Cart', 'Please sign in to use cart.');
+      AppSnackbar.show('Cart', 'Please sign in to use cart.');
       return;
     }
 
@@ -150,9 +151,9 @@ class CartController extends GetxController {
       );
       _upsertLocalItem(product, quantity);
       status.value = CartLoadStatus.success;
-      Get.snackbar('Cart', successMessage);
+      AppSnackbar.show('Cart', successMessage);
     } catch (_) {
-      Get.snackbar('Cart', 'Could not update cart. Try again.');
+      AppSnackbar.show('Cart', 'Could not update cart. Try again.');
     } finally {
       busyProductIds.remove(product.id);
     }
@@ -165,12 +166,12 @@ class CartController extends GetxController {
     }
 
     if (stock <= 0) {
-      Get.snackbar('Cart', '${product.name} is out of stock.');
+      AppSnackbar.show('Cart', '${product.name} is out of stock.');
       return false;
     }
 
     if (nextQuantity > stock) {
-      Get.snackbar('Cart', 'Only $stock item(s) available.');
+      AppSnackbar.show('Cart', 'Only $stock item(s) available.');
       return false;
     }
 

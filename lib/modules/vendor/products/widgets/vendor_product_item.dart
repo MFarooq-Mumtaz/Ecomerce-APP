@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_palette.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/product_image.dart';
 import '../../../../data/models/product_model.dart';
@@ -22,65 +23,120 @@ class VendorProductItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: AppColors.surface,
+      color: context.colors.surface,
       borderRadius: BorderRadius.circular(8),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Row(
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: Container(
-                width: 72,
-                height: 72,
-                color: Colors.white,
-                child: ProductImage(
-                  imageUrl: product.imageUrl,
-                  localImagePath: product.localImagePath,
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    product.name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTextStyles.titleMedium,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '\$${product.price.toStringAsFixed(2)} • Stock ${product.stock ?? 0}',
-                    style: AppTextStyles.bodyMedium.copyWith(
-                      color: AppColors.textMuted,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          // Narrow cards: smaller image and one menu instead of two buttons.
+          final isNarrow = constraints.maxWidth < 330;
+          final imageSize = isNarrow ? 56.0 : 72.0;
+          return Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Container(
+                    width: imageSize,
+                    height: imageSize,
+                    color: Colors.white,
+                    child: ProductImage(
+                      imageUrl: product.imageUrl,
+                      localImagePath: product.localImagePath,
                     ),
                   ),
-                  const SizedBox(height: 6),
-                  _StatusChip(isActive: product.isActive),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        product.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTextStyles.titleMedium,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '\$${product.price.toStringAsFixed(2)} • Stock ${product.stock ?? 0}',
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          color: context.colors.textMuted,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      _StatusChip(isActive: product.isActive),
+                    ],
+                  ),
+                ),
+                if (isNarrow)
+                  _ActionsMenu(
+                    isDeleting: isDeleting,
+                    onEdit: onEdit,
+                    onDelete: onDelete,
+                  )
+                else ...[
+                  IconButton(
+                    tooltip: 'Edit product',
+                    onPressed: onEdit,
+                    icon: const Icon(Icons.edit_outlined),
+                  ),
+                  IconButton(
+                    tooltip: 'Delete product',
+                    onPressed: isDeleting ? null : onDelete,
+                    icon: isDeleting
+                        ? const _DeletingIndicator()
+                        : const Icon(Icons.delete_outline),
+                  ),
                 ],
-              ),
+              ],
             ),
-            IconButton(
-              tooltip: 'Edit product',
-              onPressed: onEdit,
-              icon: const Icon(Icons.edit_outlined),
-            ),
-            IconButton(
-              tooltip: 'Delete product',
-              onPressed: isDeleting ? null : onDelete,
-              icon: isDeleting
-                  ? const SizedBox.square(
-                      dimension: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.delete_outline),
-            ),
-          ],
-        ),
+          );
+        },
       ),
+    );
+  }
+}
+
+class _ActionsMenu extends StatelessWidget {
+  const _ActionsMenu({
+    required this.isDeleting,
+    required this.onEdit,
+    required this.onDelete,
+  });
+
+  final bool isDeleting;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    if (isDeleting) {
+      return const Padding(
+        padding: EdgeInsets.all(12),
+        child: _DeletingIndicator(),
+      );
+    }
+
+    return PopupMenuButton<VoidCallback>(
+      tooltip: 'Product actions',
+      onSelected: (action) => action(),
+      itemBuilder: (context) => [
+        PopupMenuItem(value: onEdit, child: const Text('Edit')),
+        PopupMenuItem(value: onDelete, child: const Text('Delete')),
+      ],
+    );
+  }
+}
+
+class _DeletingIndicator extends StatelessWidget {
+  const _DeletingIndicator();
+
+  @override
+  Widget build(BuildContext context) {
+    return const SizedBox.square(
+      dimension: 18,
+      child: CircularProgressIndicator(strokeWidth: 2),
     );
   }
 }
@@ -92,7 +148,7 @@ class _StatusChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = isActive ? AppColors.primary : AppColors.textMuted;
+    final color = isActive ? AppColors.primary : context.colors.textMuted;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(

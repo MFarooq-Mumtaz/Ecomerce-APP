@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../../core/constants/app_layout.dart';
-import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_palette.dart';
 import '../../../../core/theme/app_text_styles.dart';
-import '../../../../core/widgets/unfocus_on_tap.dart';
+import '../../../../core/utils/responsive.dart';
+import '../../../../core/utils/app_validators.dart';
+import '../../../../core/widgets/auth_text_field.dart';
 import '../controller/login_controller.dart';
 
 class LoginView extends GetView<LoginController> {
@@ -12,77 +14,89 @@ class LoginView extends GetView<LoginController> {
 
   @override
   Widget build(BuildContext context) {
-    return UnfocusOnTap(
-      child: Scaffold(
-        backgroundColor: AppColors.background,
-        body: SafeArea(
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 390),
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(
-                  AppLayout.pagePadding,
-                  92,
-                  AppLayout.pagePadding,
-                  32,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Text('Sign in', style: AppTextStyles.headlineLarge),
-                    const SizedBox(height: 31),
-                    _LoginTextField(
-                      controller: controller.emailController,
-                      hintText: 'Email Address',
-                      keyboardType: TextInputType.emailAddress,
-                      textInputAction: TextInputAction.next,
-                    ),
-                    const SizedBox(height: 16),
-                    Obx(
-                      () => _LoginTextField(
-                        controller: controller.passwordController,
-                        hintText: 'Password',
-                        obscureText: !controller.isPasswordVisible.value,
-                        textInputAction: TextInputAction.done,
-                        onSubmitted: (_) =>
-                            controller.signInWithEmailPassword(),
-                        suffixIcon: IconButton(
-                          tooltip: controller.isPasswordVisible.value
-                              ? 'Hide password'
-                              : 'Show password',
-                          icon: Icon(
-                            controller.isPasswordVisible.value
-                                ? Icons.visibility_off_outlined
-                                : Icons.visibility_outlined,
-                          ),
-                          onPressed: controller.togglePasswordVisibility,
+    return Scaffold(
+      backgroundColor: context.colors.background,
+      body: SafeArea(
+        child: ResponsiveBuilder(
+          builder: (context, layout) => Center(
+            child: SingleChildScrollView(
+              // Content stays at most 440 wide and centered on tablets; the
+              // top gap shrinks on short (landscape) screens.
+              padding: layout.pageInsets(
+                maxContentWidth: Responsive.authMaxWidth,
+                top: (layout.height * 0.1).clamp(16.0, 92.0),
+                bottom: 32,
+              ),
+              child: Form(
+                key: controller.formKey,
+                child: AutofillGroup(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text('Sign in', style: AppTextStyles.headlineLarge),
+                      const SizedBox(height: 31),
+                      AuthTextField(
+                        controller: controller.emailController,
+                        hintText: 'Email Address',
+                        validator: AppValidators.email,
+                        keyboardType: TextInputType.emailAddress,
+                        textInputAction: TextInputAction.next,
+                        autofillHints: const [AutofillHints.email],
+                      ),
+                      const SizedBox(height: 16),
+                      Obx(
+                        () => AuthTextField(
+                          controller: controller.passwordController,
+                          hintText: 'Password',
+                          validator: AppValidators.loginPassword,
+                          obscureText: !controller.isPasswordVisible.value,
+                          onToggleVisibility:
+                              controller.togglePasswordVisibility,
+                          textInputAction: TextInputAction.done,
+                          autofillHints: const [AutofillHints.password],
+                          onFieldSubmitted: (_) =>
+                              controller.signInWithEmailPassword(),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 16),
-                    Obx(
-                      () => _PrimaryLoginButton(
-                        isLoading: controller.isEmailLoading.value,
-                        onPressed: controller.signInWithEmailPassword,
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton(
+                          style: TextButton.styleFrom(
+                            foregroundColor: context.colors.textPrimary,
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                          ),
+                          onPressed: controller.goToForgotPassword,
+                          child: Text(
+                            'Forgot Password?',
+                            style: AppTextStyles.bodyMedium.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 16),
-                    Obx(
-                      () => _AuthMessage(
-                        error: controller.errorMessage.value,
-                        success: controller.successMessage.value,
+                      const SizedBox(height: 4),
+                      Obx(
+                        () => AuthSubmitButton(
+                          label: 'Continue',
+                          isLoading: controller.isEmailLoading.value,
+                          onPressed: controller.signInWithEmailPassword,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                    _CreateAccountPrompt(onTap: controller.goToSignup),
-                    const SizedBox(height: 44),
-                    Obx(
-                      () => _GoogleLoginButton(
-                        isLoading: controller.isGoogleLoading.value,
-                        onPressed: controller.signInWithGoogle,
+                      const SizedBox(height: 16),
+                      Obx(
+                        () => AuthMessage(error: controller.errorMessage.value),
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 12),
+                      _CreateAccountPrompt(onTap: controller.goToSignup),
+                      const SizedBox(height: 44),
+                      Obx(
+                        () => _GoogleLoginButton(
+                          isLoading: controller.isGoogleLoading.value,
+                          onPressed: controller.signInWithGoogle,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -107,7 +121,7 @@ class _CreateAccountPrompt extends StatelessWidget {
           minimumSize: Size.zero,
           padding: EdgeInsets.zero,
           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-          foregroundColor: AppColors.textPrimary,
+          foregroundColor: context.colors.textPrimary,
           textStyle: AppTextStyles.bodyMedium,
         ),
         onPressed: onTap,
@@ -115,13 +129,13 @@ class _CreateAccountPrompt extends StatelessWidget {
           TextSpan(
             text: "Don't have an Account? ",
             style: AppTextStyles.bodyMedium.copyWith(
-              color: AppColors.textMuted,
+              color: context.colors.textMuted,
             ),
             children: [
               TextSpan(
                 text: 'Create One',
                 style: AppTextStyles.bodyMedium.copyWith(
-                  color: AppColors.textPrimary,
+                  color: context.colors.textPrimary,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -129,82 +143,6 @@ class _CreateAccountPrompt extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _LoginTextField extends StatelessWidget {
-  const _LoginTextField({
-    required this.controller,
-    required this.hintText,
-    this.keyboardType,
-    this.textInputAction,
-    this.obscureText = false,
-    this.suffixIcon,
-    this.onSubmitted,
-  });
-
-  final TextEditingController controller;
-  final String hintText;
-  final TextInputType? keyboardType;
-  final TextInputAction? textInputAction;
-  final bool obscureText;
-  final Widget? suffixIcon;
-  final ValueChanged<String>? onSubmitted;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: AppLayout.buttonHeight,
-      child: TextField(
-        controller: controller,
-        keyboardType: keyboardType,
-        textInputAction: textInputAction,
-        obscureText: obscureText,
-        onSubmitted: onSubmitted,
-        style: AppTextStyles.bodyLarge,
-        decoration: InputDecoration(
-          hintText: hintText,
-          suffixIcon: suffixIcon,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 12),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(4),
-            borderSide: BorderSide.none,
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(4),
-            borderSide: BorderSide.none,
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(4),
-            borderSide: const BorderSide(color: AppColors.primary),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _PrimaryLoginButton extends StatelessWidget {
-  const _PrimaryLoginButton({required this.isLoading, required this.onPressed});
-
-  final bool isLoading;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return FilledButton(
-      onPressed: isLoading ? null : onPressed,
-      child: isLoading
-          ? const SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: Colors.white,
-              ),
-            )
-          : const Text('Continue'),
     );
   }
 }
@@ -221,10 +159,10 @@ class _GoogleLoginButton extends StatelessWidget {
       height: 52,
       child: FilledButton(
         style: FilledButton.styleFrom(
-          backgroundColor: AppColors.surface,
-          foregroundColor: AppColors.textPrimary,
-          disabledBackgroundColor: AppColors.surface,
-          disabledForegroundColor: AppColors.textMuted,
+          backgroundColor: context.colors.surface,
+          foregroundColor: context.colors.textPrimary,
+          disabledBackgroundColor: context.colors.surface,
+          disabledForegroundColor: context.colors.textMuted,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppLayout.pillRadius),
           ),
@@ -254,29 +192,6 @@ class _GoogleLoginButton extends StatelessWidget {
               const Text('Continue With Google'),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _AuthMessage extends StatelessWidget {
-  const _AuthMessage({this.error, this.success});
-
-  final String? error;
-  final String? success;
-
-  @override
-  Widget build(BuildContext context) {
-    final message = error ?? success;
-    if (message == null || message.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    final isError = error != null;
-    return Text(
-      message,
-      style: AppTextStyles.bodyMedium.copyWith(
-        color: isError ? AppColors.error : AppColors.success,
       ),
     );
   }

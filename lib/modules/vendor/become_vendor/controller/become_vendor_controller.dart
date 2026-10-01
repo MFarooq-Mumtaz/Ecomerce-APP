@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../../../../core/routes/app_routes.dart';
+import '../../../../core/utils/app_validators.dart';
+import '../../../../core/widgets/phone_number_field.dart';
+import '../../../../core/widgets/app_snackbar.dart';
 import '../../../../data/models/vendor_model.dart';
 import '../../../../data/repositories/vendor_repository.dart';
 import '../../../../data/services/auth_service.dart';
@@ -20,12 +22,19 @@ class BecomeVendorController extends GetxController {
   final descriptionController = TextEditingController();
   final isSubmitting = false.obs;
 
+  /// Latest value from the phone field, including the country code.
+  PhoneNumber? _phone;
+
   @override
   void onInit() {
     super.onInit();
     final user = _authService.currentUser;
     ownerNameController.text = user?.displayName?.trim() ?? '';
     emailController.text = user?.email ?? '';
+  }
+
+  void onPhoneChanged(PhoneNumber phone) {
+    _phone = phone;
   }
 
   Future<void> submit() async {
@@ -36,7 +45,7 @@ class BecomeVendorController extends GetxController {
 
     final validation = _validate();
     if (validation != null) {
-      Get.snackbar('Become a Vendor', validation);
+      AppSnackbar.show('Become a Vendor', validation);
       return;
     }
 
@@ -48,7 +57,8 @@ class BecomeVendorController extends GetxController {
         storeName: storeNameController.text.trim(),
         ownerName: ownerNameController.text.trim(),
         email: emailController.text.trim(),
-        phone: phoneController.text.trim(),
+        // Saved in international format, e.g. +923001234567.
+        phone: _phone!.completeNumber,
         description: descriptionController.text.trim(),
         isActive: true,
       );
@@ -56,12 +66,20 @@ class BecomeVendorController extends GetxController {
       if (Get.isRegistered<ProfileController>()) {
         await Get.find<ProfileController>().loadProfile();
       }
-      Get.offAllNamed(AppRoutes.vendorDashboard);
-      Get.snackbar('Become a Vendor', 'Your store is ready.');
+      // Stay in the normal customer app; Profile now shows Manage Store.
+      Get.closeAllSnackbars();
+      Get.back();
+      AppSnackbar.show(
+        'Become a Vendor',
+        'Your store is ready. Open it from Profile > Manage Store.',
+      );
     } on VendorFailure catch (failure) {
-      Get.snackbar('Become a Vendor', failure.message);
+      AppSnackbar.show('Become a Vendor', failure.message);
     } catch (_) {
-      Get.snackbar('Become a Vendor', 'Could not submit request. Try again.');
+      AppSnackbar.show(
+        'Become a Vendor',
+        'Could not submit request. Try again.',
+      );
     } finally {
       isSubmitting.value = false;
     }
@@ -77,8 +95,9 @@ class BecomeVendorController extends GetxController {
     if (!GetUtils.isEmail(emailController.text.trim())) {
       return 'Enter a valid contact email.';
     }
-    if (phoneController.text.trim().isEmpty) {
-      return 'Enter phone number.';
+    final phoneError = AppValidators.phone(_phone);
+    if (phoneError != null) {
+      return phoneError;
     }
     if (descriptionController.text.trim().length < 10) {
       return 'Enter a short store description.';

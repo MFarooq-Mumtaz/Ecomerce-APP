@@ -1,5 +1,7 @@
 import 'package:get/get.dart';
 
+import '../../modules/auth/forgot_password/bindings/forgot_password_binding.dart';
+import '../../modules/auth/forgot_password/view/forgot_password_view.dart';
 import '../../modules/auth/login/bindings/login_binding.dart';
 import '../../modules/auth/login/view/login_view.dart';
 import '../../modules/auth/signup/bindings/signup_binding.dart';
@@ -12,13 +14,14 @@ import '../../modules/checkout/bindings/checkout_binding.dart';
 import '../../modules/checkout/view/checkout_view.dart';
 import '../../modules/collection/bindings/collection_binding.dart';
 import '../../modules/collection/view/collection_view.dart';
-import '../../modules/payment_method/view/payment_method_view.dart';
 import '../../modules/product_detail/bindings/product_detail_binding.dart';
 import '../../modules/product_detail/view/product_detail_view.dart';
 import '../../modules/vendor/become_vendor/bindings/become_vendor_binding.dart';
 import '../../modules/vendor/become_vendor/view/become_vendor_view.dart';
 import '../../modules/vendor/dashboard/bindings/vendor_dashboard_binding.dart';
 import '../../modules/vendor/dashboard/view/vendor_dashboard_view.dart';
+import '../../modules/vendor/orders/bindings/vendor_orders_binding.dart';
+import '../../modules/vendor/orders/view/vendor_orders_view.dart';
 import '../../modules/vendor/products/bindings/vendor_products_binding.dart';
 import '../../modules/vendor/products/view/vendor_product_form_view.dart';
 import '../../modules/vendor/products/view/vendor_products_view.dart';
@@ -46,6 +49,11 @@ abstract final class AppPages {
       binding: SignupBinding(),
     ),
     GetPage(
+      name: AppRoutes.forgotPassword,
+      page: () => const ForgotPasswordView(),
+      binding: ForgotPasswordBinding(),
+    ),
+    GetPage(
       name: AppRoutes.home,
       page: () => const AppShellView(),
       binding: AppShellBinding(),
@@ -71,10 +79,6 @@ abstract final class AppPages {
       binding: CheckoutBinding(),
     ),
     GetPage(
-      name: AppRoutes.paymentMethod,
-      page: () => const PaymentMethodView(),
-    ),
-    GetPage(
       name: AppRoutes.collection,
       page: () => const CollectionView(),
       binding: CollectionBinding(),
@@ -93,6 +97,11 @@ abstract final class AppPages {
       name: AppRoutes.vendorProducts,
       page: () => const VendorProductsView(),
       binding: VendorProductsBinding(),
+    ),
+    GetPage(
+      name: AppRoutes.vendorOrders,
+      page: () => const VendorOrdersView(),
+      binding: VendorOrdersBinding(),
     ),
     GetPage(
       name: AppRoutes.vendorProductForm,

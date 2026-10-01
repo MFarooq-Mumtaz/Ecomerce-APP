@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../core/routes/app_routes.dart';
+import '../../../core/utils/app_validators.dart';
+import '../../../core/widgets/phone_number_field.dart';
+import '../../../core/widgets/app_snackbar.dart';
 import '../../../data/models/address_model.dart';
 import '../../../data/models/order_models.dart';
 import '../../../data/repositories/address_repository.dart';
 import '../../../data/repositories/cart_repository.dart';
 import '../../../data/repositories/order_repository.dart';
-import '../../../data/repositories/user_repository.dart';
 import '../../../data/services/auth_service.dart';
 import '../../cart/controller/cart_controller.dart';
 
@@ -16,16 +18,12 @@ enum CheckoutLoadStatus { idle, loading, success, error }
 class CheckoutController extends GetxController {
   CheckoutController(
     this._authService,
-    this._userRepository,
     this._addressRepository,
     this._orderRepository,
     this._cartController,
   );
 
-  static const shippingAmount = 0.0;
-
   final AuthService _authService;
-  final UserRepository _userRepository;
   final AddressRepository _addressRepository;
   final OrderRepository _orderRepository;
   final CartController _cartController;
@@ -40,6 +38,9 @@ class CheckoutController extends GetxController {
 
   final fullNameController = TextEditingController();
   final phoneController = TextEditingController();
+
+  /// Latest value from the phone field, including the country code.
+  PhoneNumber? _phone;
   final addressLine1Controller = TextEditingController();
   final addressLine2Controller = TextEditingController();
   final cityController = TextEditingController();
@@ -48,8 +49,7 @@ class CheckoutController extends GetxController {
   final countryController = TextEditingController(text: 'Pakistan');
 
   double get subtotal => _cartController.subtotal;
-  double get shipping => shippingAmount;
-  double get total => subtotal + shipping;
+  double get total => subtotal;
   int get itemCount => _cartController.itemCount;
   List<CartProductItem> get cartItems => _cartController.items.toList();
 
@@ -100,6 +100,10 @@ class CheckoutController extends GetxController {
     }
   }
 
+  void onPhoneChanged(PhoneNumber phone) {
+    _phone = phone;
+  }
+
   void selectAddress(AddressModel address) {
     selectedAddressId.value = address.id;
   }
@@ -116,7 +120,7 @@ class CheckoutController extends GetxController {
 
     final validation = _validateAddress();
     if (validation != null) {
-      Get.snackbar('Address', validation);
+      AppSnackbar.show('Address', validation);
       return;
     }
 
@@ -125,7 +129,8 @@ class CheckoutController extends GetxController {
       final address = AddressModel(
         id: '',
         fullName: fullNameController.text.trim(),
-        phone: phoneController.text.trim(),
+        // Saved in international format, e.g. +923001234567.
+        phone: _phone!.completeNumber,
         addressLine1: addressLine1Controller.text.trim(),
         addressLine2: addressLine2Controller.text.trim().isEmpty
             ? null
@@ -145,9 +150,9 @@ class CheckoutController extends GetxController {
       await loadCheckout();
       selectedAddressId.value = addressId;
       showAddressForm.value = false;
-      Get.snackbar('Address', 'Delivery address saved.');
+      AppSnackbar.show('Address', 'Delivery address saved.');
     } catch (_) {
-      Get.snackbar('Address', 'Could not save address. Try again.');
+      AppSnackbar.show('Address', 'Could not save address. Try again.');
     } finally {
       isSavingAddress.value = false;
     }
@@ -160,37 +165,31 @@ class CheckoutController extends GetxController {
       return;
     }
     if (_cartController.items.isEmpty) {
-      Get.snackbar('Checkout', 'Your cart is empty.');
+      AppSnackbar.show('Checkout', 'Your cart is empty.');
       return;
     }
     if (address == null) {
-      Get.snackbar('Checkout', 'Add a delivery address first.');
+      AppSnackbar.show('Checkout', 'Add a delivery address first.');
       return;
     }
 
     isPlacingOrder.value = true;
     try {
-      final profile = await _userRepository.getUserProfile(firebaseUser.uid);
-      await _orderRepository.placeOrder(
-        draft: PlaceOrderDraft(
-          customerId: firebaseUser.uid,
-          customerEmail: profile.email,
-          customerName: profile.displayName.trim().isEmpty
-              ? profile.email.split('@').first
-              : profile.displayName.trim(),
-          address: address,
-          shipping: shipping,
-        ),
+      await _orderRepository.createOrder(
+        draft: PlaceOrderDraft(customerId: firebaseUser.uid, address: address),
         cartItems: _cartController.items.toList(),
       );
 
+      // The order transaction already removed the cart documents.
+      _cartController.clearSession();
       await _cartController.loadCart();
-      Get.snackbar('Order', 'Order placed successfully.');
       Get.offAllNamed(AppRoutes.home);
+      AppSnackbar.show('Order placed', 'Your order has been placed.');
     } on OrderFailure catch (failure) {
-      Get.snackbar('Checkout', failure.message);
+      AppSnackbar.show('Checkout', failure.message);
+      await _cartController.loadCart();
     } catch (_) {
-      Get.snackbar('Checkout', 'Order could not be placed. Try again.');
+      AppSnackbar.show('Checkout', 'Order could not be placed. Try again.');
     } finally {
       isPlacingOrder.value = false;
     }
@@ -200,8 +199,9 @@ class CheckoutController extends GetxController {
     if (fullNameController.text.trim().isEmpty) {
       return 'Enter full name.';
     }
-    if (phoneController.text.trim().isEmpty) {
-      return 'Enter phone number.';
+    final phoneError = AppValidators.phone(_phone);
+    if (phoneError != null) {
+      return phoneError;
     }
     if (addressLine1Controller.text.trim().isEmpty) {
       return 'Enter address line 1.';
@@ -224,6 +224,7 @@ class CheckoutController extends GetxController {
   void _clearAddressForm() {
     fullNameController.clear();
     phoneController.clear();
+    _phone = null;
     addressLine1Controller.clear();
     addressLine2Controller.clear();
     cityController.clear();

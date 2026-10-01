@@ -39,6 +39,26 @@ class ProductRepository {
         .toList();
   }
 
+  /// Active products that have sold at least once, best sellers first.
+  ///
+  /// Sorting happens in Dart instead of a Firestore orderBy so older seeded
+  /// products without a soldCount field are still read safely (as 0).
+  Future<List<ProductModel>> getTopSellingProducts({int? limit}) async {
+    return topSellingFrom(await getActiveProducts(), limit: limit);
+  }
+
+  static List<ProductModel> topSellingFrom(
+    Iterable<ProductModel> products, {
+    int? limit,
+  }) {
+    final sorted = products.where((product) => product.soldCount > 0).toList()
+      ..sort((a, b) {
+        final order = b.soldCount.compareTo(a.soldCount);
+        return order != 0 ? order : a.name.compareTo(b.name);
+      });
+    return limit == null ? sorted : sorted.take(limit).toList();
+  }
+
   Future<List<ProductModel>> getActiveProductsByCategory(
     String categoryId,
   ) async {

@@ -27,11 +27,8 @@ class SignupBinding extends Bindings {
       );
     }
     Get.lazyPut<SignupController>(
-      () => SignupController(
-        Get.find<AuthRepository>(),
-        Get.find<AuthService>(),
-        Get.find<UserRepository>(),
-      ),
+      () =>
+          SignupController(Get.find<AuthRepository>(), Get.find<AuthService>()),
     );
   }
 }

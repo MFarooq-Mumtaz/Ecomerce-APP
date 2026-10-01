@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../../core/routes/app_routes.dart';
+import '../../../../core/widgets/app_snackbar.dart';
 import '../../../../data/models/product_model.dart';
 import '../../../../data/repositories/product_repository.dart';
 import '../../../../data/services/auth_service.dart';
@@ -107,9 +108,9 @@ class VendorProductsController extends GetxController {
       if (products.isEmpty) {
         status.value = VendorProductsStatus.empty;
       }
-      Get.snackbar('Products', 'Product deleted.');
+      AppSnackbar.show('Products', 'Product deleted.');
     } on ProductWriteFailure catch (failure) {
-      Get.snackbar('Products', failure.message);
+      AppSnackbar.show('Products', failure.message);
     } finally {
       deletingProductIds.remove(product.id);
     }

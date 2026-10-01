@@ -19,38 +19,28 @@ class HomeController extends GetxController {
   final status = HomeLoadStatus.idle.obs;
   final categories = <CategoryModel>[].obs;
   final products = <ProductModel>[].obs;
-  final selectedCategoryId = RxnString();
   final searchQuery = ''.obs;
   final errorMessage = RxnString();
 
-  List<ProductModel> get filteredProducts {
+  static const topSellingPreviewLimit = 10;
+
+  /// Best sellers by real soldCount, loaded separately from [products].
+  final topSellingProducts = <ProductModel>[].obs;
+
+  bool get isSearching => searchQuery.value.trim().isNotEmpty;
+
+  /// Search runs over the whole active catalog, not only Top Selling.
+  List<ProductModel> get searchResults {
     final query = searchQuery.value.trim().toLowerCase();
-    final categoryId = selectedCategoryId.value;
+    if (query.isEmpty) {
+      return const <ProductModel>[];
+    }
 
     return products.where((product) {
-      final matchesCategory =
-          categoryId == null || product.categoryId == categoryId;
-      final matchesSearch =
-          query.isEmpty ||
-          product.name.toLowerCase().contains(query) ||
+      return product.name.toLowerCase().contains(query) ||
           product.description.toLowerCase().contains(query) ||
           (product.categoryName?.toLowerCase().contains(query) ?? false);
-
-      return matchesCategory && matchesSearch;
     }).toList();
-  }
-
-  List<ProductModel> get topSellingProducts {
-    final filtered = filteredProducts;
-    return filtered.take(5).toList();
-  }
-
-  List<ProductModel> get newProducts {
-    final filtered = filteredProducts;
-    if (filtered.length <= 5) {
-      return filtered;
-    }
-    return filtered.skip(5).take(5).toList();
   }
 
   @override
@@ -73,19 +63,19 @@ class HomeController extends GetxController {
 
       categories.assignAll(results[0] as List<CategoryModel>);
       products.assignAll(results[1] as List<ProductModel>);
-
-      if (selectedCategoryId.value != null &&
-          !categories.any(
-            (category) => category.id == selectedCategoryId.value,
-          )) {
-        selectedCategoryId.value = null;
-      }
+      topSellingProducts.assignAll(
+        ProductRepository.topSellingFrom(
+          products,
+          limit: topSellingPreviewLimit,
+        ),
+      );
 
       status.value = products.isEmpty && categories.isEmpty
           ? HomeLoadStatus.empty
           : HomeLoadStatus.success;
     } catch (_) {
-      errorMessage.value = 'Home data could not be loaded. Check Firestore access and try again.';
+      errorMessage.value =
+          'Home data could not be loaded. Check Firestore access and try again.';
       status.value = HomeLoadStatus.error;
     }
   }
@@ -111,6 +101,35 @@ class HomeController extends GetxController {
     }
 
     Get.toNamed(AppRoutes.collection, arguments: category);
+  }
+
+  /// Categories "See All" opens the Collections tab with every category.
+  void openAllCategories() {
+    FocusManager.instance.primaryFocus?.unfocus();
+    if (Get.isRegistered<CollectionController>() &&
+        Get.isRegistered<AppShellController>()) {
+      Get.find<CollectionController>().showCategories();
+      Get.find<AppShellController>().selectTab(1);
+      return;
+    }
+
+    Get.toNamed(AppRoutes.collection);
+  }
+
+  /// Top Selling "See All" reuses the same CollectionView.
+  void openTopSelling() {
+    FocusManager.instance.primaryFocus?.unfocus();
+    if (Get.isRegistered<CollectionController>() &&
+        Get.isRegistered<AppShellController>()) {
+      Get.find<CollectionController>().showTopSelling();
+      Get.find<AppShellController>().selectTab(1);
+      return;
+    }
+
+    Get.toNamed(
+      AppRoutes.collection,
+      arguments: CollectionController.topSellingArgument,
+    );
   }
 
   void openProduct(ProductModel product) {

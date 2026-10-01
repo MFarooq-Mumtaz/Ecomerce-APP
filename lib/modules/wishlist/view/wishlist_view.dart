@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../../../core/constants/app_layout.dart';
 import '../../../core/routes/app_routes.dart';
-import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_palette.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/utils/responsive.dart';
 import '../../../core/widgets/app_state_views.dart';
 import '../../../data/models/product_model.dart';
 import '../../cart/controller/cart_controller.dart';
@@ -19,10 +19,10 @@ class WishlistView extends GetView<WishlistController> {
     final cartController = Get.find<CartController>();
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.colors.background,
       appBar: AppBar(
-        backgroundColor: AppColors.background,
-        foregroundColor: AppColors.textPrimary,
+        backgroundColor: context.colors.background,
+        foregroundColor: context.colors.textPrimary,
         title: Obx(
           () => Text(
             'My Favourites (${controller.productIds.length})',
@@ -53,36 +53,22 @@ class WishlistView extends GetView<WishlistController> {
             case WishlistLoadStatus.success:
               return RefreshIndicator(
                 onRefresh: controller.loadWishlist,
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    final width =
-                        ((constraints.maxWidth -
-                                    (AppLayout.pagePadding * 2) -
-                                    20) /
-                                2)
-                            .clamp(150.0, 190.0)
-                            .toDouble();
-                    final ratio = width / (width * 1.82);
-
+                child: ResponsiveBuilder(
+                  builder: (context, layout) {
                     return GridView.builder(
-                      padding: const EdgeInsets.fromLTRB(
-                        AppLayout.pagePadding,
-                        24,
-                        AppLayout.pagePadding,
-                        32,
+                      padding: layout.pageInsets(
+                        maxContentWidth: Responsive.gridMaxWidth,
+                        top: 24,
                       ),
-                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: constraints.maxWidth > 560 ? 3 : 2,
-                        mainAxisSpacing: 20,
-                        crossAxisSpacing: 20,
-                        childAspectRatio: ratio,
+                      gridDelegate: ProductCard.gridDelegate(
+                        layout,
+                        MediaQuery.textScalerOf(context),
                       ),
                       itemCount: controller.products.length,
                       itemBuilder: (context, index) {
                         final product = controller.products[index];
                         return _WishlistProductCard(
                           product: product,
-                          width: width,
                           wishlistController: controller,
                           cartController: cartController,
                         );
@@ -101,13 +87,11 @@ class WishlistView extends GetView<WishlistController> {
 class _WishlistProductCard extends StatelessWidget {
   const _WishlistProductCard({
     required this.product,
-    required this.width,
     required this.wishlistController,
     required this.cartController,
   });
 
   final ProductModel product;
-  final double width;
   final WishlistController wishlistController;
   final CartController cartController;
 
@@ -116,7 +100,6 @@ class _WishlistProductCard extends StatelessWidget {
     return Obx(
       () => ProductCard(
         product: product,
-        width: width,
         onTap: () => Get.toNamed(AppRoutes.productDetail, arguments: product),
         isWishlisted: wishlistController.isWishlisted(product.id),
         isInCart: cartController.isInCart(product.id),

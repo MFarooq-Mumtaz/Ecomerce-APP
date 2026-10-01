@@ -3,53 +3,57 @@ import 'package:get/get.dart';
 
 import '../../../core/constants/app_layout.dart';
 import '../../../core/routes/app_routes.dart';
-import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_palette.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/utils/responsive.dart';
 import '../../../core/widgets/app_state_views.dart';
-import '../../../core/widgets/unfocus_on_tap.dart';
 import '../controller/profile_controller.dart';
+import '../widgets/theme_mode_selector.dart';
 
 class ProfileView extends GetView<ProfileController> {
   const ProfileView({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return UnfocusOnTap(
-      child: Scaffold(
-        backgroundColor: AppColors.background,
-        body: SafeArea(
-          child: Obx(() {
-            switch (controller.status.value) {
-              case ProfileLoadStatus.idle:
-              case ProfileLoadStatus.loading:
-                return const AppLoadingState(message: 'Loading profile');
-              case ProfileLoadStatus.error:
-                return AppErrorState(
-                  message:
-                      controller.errorMessage.value ??
-                      'Profile could not be loaded.',
-                  onRetry: controller.loadProfile,
+    return Scaffold(
+      backgroundColor: context.colors.background,
+      body: SafeArea(
+        child: Obx(() {
+          switch (controller.status.value) {
+            case ProfileLoadStatus.idle:
+            case ProfileLoadStatus.loading:
+              return const AppLoadingState(message: 'Loading profile');
+            case ProfileLoadStatus.error:
+              return AppErrorState(
+                message:
+                    controller.errorMessage.value ??
+                    'Profile could not be loaded.',
+                onRetry: controller.loadProfile,
+              );
+            case ProfileLoadStatus.success:
+              final profile = controller.user.value;
+              if (profile == null) {
+                return const AppEmptyState(
+                  title: 'Profile unavailable',
+                  message: 'Sign in again to load your profile.',
+                  icon: Icons.person_outline,
                 );
-              case ProfileLoadStatus.success:
-                final profile = controller.user.value;
-                if (profile == null) {
-                  return const AppEmptyState(
-                    title: 'Profile unavailable',
-                    message: 'Sign in again to load your profile.',
-                    icon: Icons.person_outline,
-                  );
-                }
+              }
 
-                return CustomScrollView(
+              return ResponsiveBuilder(
+                builder: (context, layout) => CustomScrollView(
                   slivers: [
                     SliverPadding(
-                      padding: const EdgeInsets.fromLTRB(24, 44, 24, 0),
+                      padding: layout.pageInsets(
+                        top: layout.height < 560 ? 16 : 44,
+                        bottom: 0,
+                      ),
                       sliver: SliverToBoxAdapter(
                         child: Text('Profile', style: AppTextStyles.titleLarge),
                       ),
                     ),
                     SliverPadding(
-                      padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
+                      padding: layout.pageInsets(top: 24),
                       sliver: SliverList.list(
                         children: [
                           _ProfileHeader(
@@ -123,6 +127,18 @@ class ProfileView extends GetView<ProfileController> {
                             );
                           }),
                           const SizedBox(height: 24),
+                          Text('Theme', style: AppTextStyles.titleMedium),
+                          const SizedBox(height: 4),
+                          Text(
+                            "System follows your phone's light or dark "
+                            'setting.',
+                            style: AppTextStyles.bodyMedium.copyWith(
+                              color: context.colors.textMuted,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          const ThemeModeSelector(),
+                          const SizedBox(height: 24),
                           SizedBox(
                             height: AppLayout.buttonHeight,
                             child: Obx(
@@ -146,10 +162,10 @@ class ProfileView extends GetView<ProfileController> {
                       ),
                     ),
                   ],
-                );
-            }
-          }),
-        ),
+                ),
+              );
+          }
+        }),
       ),
     );
   }
@@ -172,7 +188,7 @@ class _ProfileHeader extends StatelessWidget {
       children: [
         CircleAvatar(
           radius: 32,
-          backgroundColor: AppColors.surface,
+          backgroundColor: context.colors.surface,
           foregroundImage: photoUrl == null || photoUrl!.isEmpty
               ? null
               : NetworkImage(photoUrl!),
@@ -197,7 +213,7 @@ class _ProfileHeader extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: AppTextStyles.bodyMedium.copyWith(
-                  color: AppColors.textMuted,
+                  color: context.colors.textMuted,
                 ),
               ),
             ],
@@ -224,20 +240,22 @@ class _ProfileMenuItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: AppColors.surface,
+      color: context.colors.surface,
       borderRadius: BorderRadius.circular(8),
       child: ListTile(
         onTap: onTap,
         enabled: onTap != null,
         leading: CircleAvatar(
-          backgroundColor: Colors.white,
-          foregroundColor: AppColors.textPrimary,
+          backgroundColor: context.colors.background,
+          foregroundColor: context.colors.textPrimary,
           child: Icon(icon),
         ),
         title: Text(title, style: AppTextStyles.titleMedium),
         subtitle: Text(
           subtitle,
-          style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textMuted),
+          style: AppTextStyles.bodyMedium.copyWith(
+            color: context.colors.textMuted,
+          ),
         ),
         trailing: onTap == null
             ? const Icon(Icons.hourglass_empty)

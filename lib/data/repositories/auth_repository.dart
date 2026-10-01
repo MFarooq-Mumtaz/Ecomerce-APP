@@ -52,6 +52,10 @@ class AuthRepository {
     return credential;
   }
 
+  Future<void> sendPasswordResetEmail(String email) {
+    return _authService.sendPasswordResetEmail(email);
+  }
+
   Future<void> signOut() {
     return _authService.signOut();
   }

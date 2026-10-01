@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../../../../core/constants/app_layout.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_palette.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../core/utils/responsive.dart';
 import '../../../../core/widgets/app_state_views.dart';
 import '../controller/vendor_products_controller.dart';
 import '../widgets/vendor_product_item.dart';
@@ -14,10 +15,10 @@ class VendorProductsView extends GetView<VendorProductsController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.colors.background,
       appBar: AppBar(
-        backgroundColor: AppColors.background,
-        foregroundColor: AppColors.textPrimary,
+        backgroundColor: context.colors.background,
+        foregroundColor: context.colors.textPrimary,
         title: Text('My Products', style: AppTextStyles.titleMedium),
         centerTitle: true,
         actions: [
@@ -50,19 +51,12 @@ class VendorProductsView extends GetView<VendorProductsController> {
             case VendorProductsStatus.success:
               return RefreshIndicator(
                 onRefresh: controller.loadProducts,
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    final horizontalPadding = constraints.maxWidth > 600
-                        ? 32.0
-                        : AppLayout.pagePadding;
-
+                child: ResponsiveBuilder(
+                  builder: (context, layout) {
                     return ListView.separated(
-                      padding: EdgeInsets.fromLTRB(
-                        horizontalPadding,
-                        16,
-                        horizontalPadding,
-                        32,
-                      ),
+                      // Extra bottom space so the add button never covers
+                      // the last product.
+                      padding: layout.pageInsets(bottom: 96),
                       itemCount: controller.products.length,
                       separatorBuilder: (context, index) =>
                           const SizedBox(height: 12),

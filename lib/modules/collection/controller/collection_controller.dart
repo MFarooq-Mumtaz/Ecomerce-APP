@@ -11,14 +11,28 @@ enum CollectionLoadStatus { idle, loading, success, empty, error }
 class CollectionController extends GetxController {
   CollectionController(this._productRepository);
 
+  /// Route argument that opens this view in Top Selling mode.
+  static const topSellingArgument = 'top-selling';
+
   final ProductRepository _productRepository;
 
   final status = CollectionLoadStatus.idle.obs;
   final categories = <CategoryModel>[].obs;
   final products = <ProductModel>[].obs;
   final selectedCategory = Rxn<CategoryModel>();
+  final isTopSelling = false.obs;
   final errorMessage = RxnString();
   CategoryModel? get category => selectedCategory.value;
+
+  /// True when a product list (category or Top Selling) is on screen.
+  bool get isShowingProducts => category != null || isTopSelling.value;
+
+  String get title {
+    if (isTopSelling.value) {
+      return 'Top Selling';
+    }
+    return category?.name ?? 'Collections';
+  }
 
   @override
   void onInit() {
@@ -27,6 +41,10 @@ class CollectionController extends GetxController {
     if (argument is CategoryModel) {
       selectedCategory.value = argument;
       loadProducts();
+      return;
+    }
+    if (argument == topSellingArgument) {
+      showTopSelling();
       return;
     }
 
@@ -51,7 +69,7 @@ class CollectionController extends GetxController {
 
   Future<void> loadProducts() async {
     final currentCategory = selectedCategory.value;
-    if (currentCategory == null) {
+    if (currentCategory == null && !isTopSelling.value) {
       await loadCategories();
       return;
     }
@@ -60,8 +78,11 @@ class CollectionController extends GetxController {
     errorMessage.value = null;
 
     try {
-      final loadedProducts = await _productRepository
-          .getActiveProductsByCategory(currentCategory.id);
+      final loadedProducts = currentCategory == null
+          ? await _productRepository.getTopSellingProducts()
+          : await _productRepository.getActiveProductsByCategory(
+              currentCategory.id,
+            );
       products.assignAll(loadedProducts);
       status.value = products.isEmpty
           ? CollectionLoadStatus.empty
@@ -73,11 +94,19 @@ class CollectionController extends GetxController {
   }
 
   void selectCategory(CategoryModel category) {
+    isTopSelling.value = false;
     selectedCategory.value = category;
     loadProducts();
   }
 
+  void showTopSelling() {
+    selectedCategory.value = null;
+    isTopSelling.value = true;
+    loadProducts();
+  }
+
   void showCategories() {
+    isTopSelling.value = false;
     selectedCategory.value = null;
     products.clear();
     loadCategories();

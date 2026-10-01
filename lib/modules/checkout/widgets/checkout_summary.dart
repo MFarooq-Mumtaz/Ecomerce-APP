@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_palette.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/utils/responsive.dart';
 
 class CheckoutSummary extends StatelessWidget {
   const CheckoutSummary({
     required this.subtotal,
-    required this.shipping,
     required this.total,
     required this.onPlaceOrder,
     required this.isPlacingOrder,
@@ -14,7 +15,6 @@ class CheckoutSummary extends StatelessWidget {
   });
 
   final double subtotal;
-  final double shipping;
   final double total;
   final VoidCallback? onPlaceOrder;
   final bool isPlacingOrder;
@@ -22,18 +22,18 @@ class CheckoutSummary extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-      decoration: const BoxDecoration(
-        color: AppColors.background,
-        border: Border(top: BorderSide(color: AppColors.surface)),
+      decoration: BoxDecoration(
+        color: context.colors.background,
+        border: Border(top: BorderSide(color: context.colors.surface)),
       ),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+      // Centered with the same width as the checkout content on tablets.
+      child: ResponsiveCenter(
+        top: 16,
+        bottom: 24,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             _SummaryRow(label: 'Subtotal', value: subtotal),
-            const SizedBox(height: 8),
-            _SummaryRow(label: 'Shipping', value: shipping),
             const SizedBox(height: 12),
             _SummaryRow(label: 'Total', value: total, isStrong: true),
             const SizedBox(height: 16),

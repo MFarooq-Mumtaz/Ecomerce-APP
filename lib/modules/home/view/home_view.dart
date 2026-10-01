@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../../../core/constants/app_layout.dart';
 import '../../../core/routes/app_routes.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_palette.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/utils/responsive.dart';
 import '../../../core/widgets/app_state_views.dart';
 import '../../../core/widgets/avero_logo.dart';
-import '../../../core/widgets/unfocus_on_tap.dart';
 import '../../../data/models/product_model.dart';
 import '../../cart/controller/cart_controller.dart';
 import '../../wishlist/controller/wishlist_controller.dart';
@@ -22,70 +22,67 @@ class HomeView extends GetView<HomeController> {
 
   @override
   Widget build(BuildContext context) {
-    return UnfocusOnTap(
-      child: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final horizontalPadding = constraints.maxWidth > 600
-                ? 32.0
-                : AppLayout.pagePadding;
-            final cardWidth =
-                ((constraints.maxWidth - (horizontalPadding * 2) - 12) / 2)
-                    .clamp(159.0, 190.0)
-                    .toDouble();
+    return SafeArea(
+      child: ResponsiveBuilder(
+        builder: (context, layout) {
+          final horizontalPadding = layout.horizontalPadding(
+            Responsive.gridMaxWidth,
+          );
+          // Phones show 2 cards per row width, tablets show more.
+          final visibleCards = layout.columnsFor(
+            minItemWidth: layout.isCompact ? 136 : 170,
+            spacing: 12,
+            minColumns: 2,
+          );
+          final cardWidth = layout.itemWidth(
+            columns: visibleCards,
+            spacing: 12,
+          );
+          // Landscape phones have little height, so the header moves up.
+          final topPadding = layout.height < 560 ? 16.0 : 44.0;
 
-            return Obx(
-              () => RefreshIndicator(
-                onRefresh: controller.refreshHome,
-                child: CustomScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  slivers: [
-                    SliverPadding(
-                      padding: EdgeInsets.fromLTRB(
-                        horizontalPadding,
-                        44,
-                        horizontalPadding,
-                        0,
-                      ),
-                      sliver: SliverToBoxAdapter(
-                        child: _HomeHeader(
-                          searchHasQuery: controller.searchQuery.isNotEmpty,
-                        ),
+          return Obx(
+            () => RefreshIndicator(
+              onRefresh: controller.refreshHome,
+              child: CustomScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                slivers: [
+                  SliverPadding(
+                    padding: EdgeInsets.fromLTRB(
+                      horizontalPadding,
+                      topPadding,
+                      horizontalPadding,
+                      0,
+                    ),
+                    sliver: SliverToBoxAdapter(
+                      child: _HomeHeader(
+                        searchHasQuery: controller.searchQuery.isNotEmpty,
                       ),
                     ),
-                    if (controller.status.value == HomeLoadStatus.loading)
-                      const SliverFillRemaining(
-                        child: AppLoadingState(message: 'Loading home'),
-                      )
-                    else if (controller.status.value == HomeLoadStatus.error)
-                      SliverFillRemaining(
-                        child: AppErrorState(
-                          message:
-                              controller.errorMessage.value ??
-                              'Home data could not be loaded.',
-                          onRetry: controller.loadHome,
-                        ),
-                      )
-                    else if (controller.status.value == HomeLoadStatus.empty)
-                      const SliverFillRemaining(
-                        child: AppEmptyState(
-                          title: 'No catalog yet',
-                          message: 'Products and categories will appear here once they are added in Firestore.',
-                        ),
-                      )
-                    else ...[
-                      if (controller.categories.isNotEmpty)
-                        SliverPadding(
-                          padding: EdgeInsets.fromLTRB(
-                            horizontalPadding,
-                            24,
-                            horizontalPadding,
-                            0,
-                          ),
-                          sliver: SliverToBoxAdapter(
-                            child: _CategoriesSection(controller: controller),
-                          ),
-                        ),
+                  ),
+                  if (controller.status.value == HomeLoadStatus.loading)
+                    const SliverFillRemaining(
+                      child: AppLoadingState(message: 'Loading home'),
+                    )
+                  else if (controller.status.value == HomeLoadStatus.error)
+                    SliverFillRemaining(
+                      child: AppErrorState(
+                        message:
+                            controller.errorMessage.value ??
+                            'Home data could not be loaded.',
+                        onRetry: controller.loadHome,
+                      ),
+                    )
+                  else if (controller.status.value == HomeLoadStatus.empty)
+                    const SliverFillRemaining(
+                      child: AppEmptyState(
+                        title: 'No catalog yet',
+                        message:
+                            'Products and categories will appear here once they are added in Firestore.',
+                      ),
+                    )
+                  else ...[
+                    if (controller.categories.isNotEmpty)
                       SliverPadding(
                         padding: EdgeInsets.fromLTRB(
                           horizontalPadding,
@@ -94,40 +91,43 @@ class HomeView extends GetView<HomeController> {
                           0,
                         ),
                         sliver: SliverToBoxAdapter(
-                          child: _ProductSection(
-                            title: 'Top Selling',
-                            products: controller.topSellingProducts,
-                            cardWidth: cardWidth,
-                            onProductTap: controller.openProduct,
-                            controller: controller,
-                          ),
+                          child: _CategoriesSection(controller: controller),
                         ),
                       ),
-                      SliverPadding(
-                        padding: EdgeInsets.fromLTRB(
-                          horizontalPadding,
-                          24,
-                          horizontalPadding,
-                          32,
-                        ),
-                        sliver: SliverToBoxAdapter(
-                          child: _ProductSection(
-                            title: 'New In',
-                            products: controller.newProducts,
-                            cardWidth: cardWidth,
-                            isEmphasized: true,
-                            onProductTap: controller.openProduct,
-                            controller: controller,
-                          ),
-                        ),
+                    SliverPadding(
+                      padding: EdgeInsets.fromLTRB(
+                        horizontalPadding,
+                        24,
+                        horizontalPadding,
+                        32,
                       ),
-                    ],
+                      sliver: SliverToBoxAdapter(
+                        child: controller.isSearching
+                            ? _ProductSection(
+                                title: 'Search Results',
+                                products: controller.searchResults,
+                                emptyMessage: 'No matching products found.',
+                                cardWidth: cardWidth,
+                                onProductTap: controller.openProduct,
+                              )
+                            : _ProductSection(
+                                title: 'Top Selling',
+                                products: controller.topSellingProducts,
+                                emptyMessage:
+                                    'Best sellers will appear here once '
+                                    'orders are placed.',
+                                cardWidth: cardWidth,
+                                onProductTap: controller.openProduct,
+                                onSeeAll: controller.openTopSelling,
+                              ),
+                      ),
+                    ),
                   ],
-                ),
+                ],
               ),
-            );
-          },
-        ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -152,7 +152,7 @@ class _HomeHeader extends GetView<HomeController> {
               height: 40,
               padding: const EdgeInsets.symmetric(horizontal: 14),
               decoration: BoxDecoration(
-                color: AppColors.surface,
+                color: context.colors.surface,
                 borderRadius: BorderRadius.circular(100),
               ),
               child: Row(
@@ -209,10 +209,14 @@ class _CategoriesSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const HomeSectionHeader(title: 'Categories'),
+        HomeSectionHeader(
+          title: 'Categories',
+          onSeeAll: controller.openAllCategories,
+        ),
         const SizedBox(height: 14),
         SizedBox(
-          height: 88,
+          // Circle (56) + gap + one label line at the current font size.
+          height: 66 + MediaQuery.textScalerOf(context).scale(20),
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             itemCount: controller.categories.length,
@@ -238,16 +242,16 @@ class _ProductSection extends StatelessWidget {
     required this.products,
     required this.cardWidth,
     required this.onProductTap,
-    required this.controller,
-    this.isEmphasized = false,
+    required this.emptyMessage,
+    this.onSeeAll,
   });
 
   final String title;
   final List<ProductModel> products;
+  final String emptyMessage;
   final double cardWidth;
-  final bool isEmphasized;
   final ValueChanged<ProductModel> onProductTap;
-  final HomeController controller;
+  final VoidCallback? onSeeAll;
 
   @override
   Widget build(BuildContext context) {
@@ -257,26 +261,29 @@ class _ProductSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        HomeSectionHeader(title: title, isEmphasized: isEmphasized),
+        HomeSectionHeader(title: title, onSeeAll: onSeeAll),
         const SizedBox(height: 14),
         if (products.isEmpty)
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
-              color: AppColors.surface,
+              color: context.colors.surface,
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
-              'No matching products yet.',
+              emptyMessage,
               style: AppTextStyles.bodyMedium.copyWith(
-                color: AppColors.textMuted,
+                color: context.colors.textMuted,
               ),
             ),
           )
         else
           SizedBox(
-            height: cardWidth * 1.95,
+            height: ProductCard.heightFor(
+              cardWidth,
+              MediaQuery.textScalerOf(context),
+            ),
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               itemCount: products.length,

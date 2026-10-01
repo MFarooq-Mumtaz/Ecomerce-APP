@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 
-import '../theme/app_colors.dart';
+import '../theme/app_palette.dart';
 
 class ProductImage extends StatelessWidget {
   const ProductImage({
@@ -52,8 +52,8 @@ class ProductImage extends StatelessWidget {
         if (progress == null) {
           return child;
         }
-        return const ColoredBox(
-          color: Color(0xFFE7E7E7),
+        return ColoredBox(
+          color: context.colors.placeholder,
           child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
         );
       },
@@ -71,8 +71,8 @@ class ProductImageFallback extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ColoredBox(
-      color: const Color(0xFFE7E7E7),
-      child: Center(child: Icon(icon, color: AppColors.textMuted)),
+      color: context.colors.placeholder,
+      child: Center(child: Icon(icon, color: context.colors.textMuted)),
     );
   }
 }

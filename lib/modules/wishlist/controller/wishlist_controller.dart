@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import '../../../data/models/product_model.dart';
 import '../../../data/repositories/wishlist_repository.dart';
 import '../../../data/services/auth_service.dart';
+import '../../../core/widgets/app_snackbar.dart';
 
 enum WishlistLoadStatus { idle, loading, success, empty, error }
 
@@ -69,7 +70,7 @@ class WishlistController extends GetxController {
   Future<void> addProduct(ProductModel product) async {
     final uid = _authService.currentUser?.uid;
     if (uid == null) {
-      Get.snackbar('Wishlist', 'Please sign in to use wishlist.');
+      AppSnackbar.show('Wishlist', 'Please sign in to use wishlist.');
       return;
     }
 
@@ -85,9 +86,9 @@ class WishlistController extends GetxController {
         products.insert(0, product);
       }
       status.value = WishlistLoadStatus.success;
-      Get.snackbar('Wishlist', '${product.name} added to wishlist.');
+      AppSnackbar.show('Wishlist', '${product.name} added to wishlist.');
     } catch (_) {
-      Get.snackbar('Wishlist', 'Could not update wishlist. Try again.');
+      AppSnackbar.show('Wishlist', 'Could not update wishlist. Try again.');
     } finally {
       busyProductIds.remove(product.id);
     }
@@ -119,14 +120,14 @@ class WishlistController extends GetxController {
       status.value = productIds.isEmpty
           ? WishlistLoadStatus.empty
           : WishlistLoadStatus.success;
-      Get.snackbar(
+      AppSnackbar.show(
         'Wishlist',
         productName == null
             ? 'Product removed from wishlist.'
             : '$productName removed from wishlist.',
       );
     } catch (_) {
-      Get.snackbar('Wishlist', 'Could not update wishlist. Try again.');
+      AppSnackbar.show('Wishlist', 'Could not update wishlist. Try again.');
     } finally {
       busyProductIds.remove(productId);
     }

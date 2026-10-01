@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../core/routes/app_routes.dart';
+import '../../../core/widgets/app_snackbar.dart';
 import '../../../data/models/user_model.dart';
 import '../../../data/repositories/auth_repository.dart';
 import '../../../data/repositories/user_repository.dart';
@@ -65,7 +66,7 @@ class ProfileController extends GetxController {
 
     final displayName = displayNameController.text.trim();
     if (displayName.isEmpty) {
-      Get.snackbar('Profile', 'Display name cannot be empty.');
+      AppSnackbar.show('Profile', 'Display name cannot be empty.');
       return;
     }
 
@@ -78,9 +79,9 @@ class ProfileController extends GetxController {
       );
       await _authService.updateDisplayName(displayName);
       await loadProfile();
-      Get.snackbar('Profile', 'Profile updated.');
+      AppSnackbar.show('Profile', 'Profile updated.');
     } catch (_) {
-      Get.snackbar('Profile', 'Could not update profile. Try again.');
+      AppSnackbar.show('Profile', 'Could not update profile. Try again.');
     } finally {
       isSaving.value = false;
     }
@@ -105,7 +106,7 @@ class ProfileController extends GetxController {
       }
       Get.offAllNamed(AppRoutes.login);
     } catch (_) {
-      Get.snackbar('Logout', 'Could not logout. Try again.');
+      AppSnackbar.show('Logout', 'Could not logout. Try again.');
     } finally {
       isLoggingOut.value = false;
     }

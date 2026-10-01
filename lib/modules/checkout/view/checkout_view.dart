@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../core/constants/app_layout.dart';
-import '../../../core/routes/app_routes.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_palette.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/utils/responsive.dart';
 import '../../../core/widgets/app_state_views.dart';
-import '../../../core/widgets/unfocus_on_tap.dart';
+import '../../../core/widgets/phone_number_field.dart';
+import '../../../core/widgets/responsive_field_pair.dart';
 import '../../../data/models/address_model.dart';
 import '../../../data/repositories/cart_repository.dart';
 import '../controller/checkout_controller.dart';
@@ -17,67 +19,98 @@ class CheckoutView extends GetView<CheckoutController> {
 
   @override
   Widget build(BuildContext context) {
-    return UnfocusOnTap(
-      child: Scaffold(
-        backgroundColor: AppColors.background,
-        appBar: AppBar(
-          backgroundColor: AppColors.background,
-          foregroundColor: AppColors.textPrimary,
-          title: Text('Checkout', style: AppTextStyles.titleMedium),
-          centerTitle: true,
-        ),
-        body: SafeArea(
-          child: Obx(() {
-            switch (controller.status.value) {
-              case CheckoutLoadStatus.idle:
-              case CheckoutLoadStatus.loading:
-                return const AppLoadingState(message: 'Loading checkout');
-              case CheckoutLoadStatus.error:
-                return AppErrorState(
-                  message:
-                      controller.errorMessage.value ??
-                      'Checkout could not be loaded.',
-                  onRetry: controller.loadCheckout,
-                );
-              case CheckoutLoadStatus.success:
-                return Column(
-                  children: [
-                    Expanded(
-                      child: RefreshIndicator(
-                        onRefresh: controller.loadCheckout,
-                        child: ListView(
-                          padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+    return Scaffold(
+      backgroundColor: context.colors.background,
+      appBar: AppBar(
+        backgroundColor: context.colors.background,
+        foregroundColor: context.colors.textPrimary,
+        title: Text('Checkout', style: AppTextStyles.titleMedium),
+        centerTitle: true,
+      ),
+      body: SafeArea(
+        child: Obx(() {
+          switch (controller.status.value) {
+            case CheckoutLoadStatus.idle:
+            case CheckoutLoadStatus.loading:
+              return const AppLoadingState(message: 'Loading checkout');
+            case CheckoutLoadStatus.error:
+              return AppErrorState(
+                message:
+                    controller.errorMessage.value ??
+                    'Checkout could not be loaded.',
+                onRetry: controller.loadCheckout,
+              );
+            case CheckoutLoadStatus.success:
+              return ResponsiveBuilder(
+                builder: (context, layout) {
+                  Widget details(EdgeInsets padding) {
+                    return RefreshIndicator(
+                      onRefresh: controller.loadCheckout,
+                      child: ListView(
+                        padding: padding,
+                        children: [
+                          _AddressSection(controller: controller),
+                          const SizedBox(height: 24),
+                          _SectionTitle(
+                            title: 'Order Summary',
+                            trailing: '${controller.itemCount} item(s)',
+                          ),
+                          const SizedBox(height: 12),
+                          ...controller.cartItems.map(
+                            (item) => _CheckoutItemRow(item: item),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+
+                  final summary = Obx(
+                    () => CheckoutSummary(
+                      subtotal: controller.subtotal,
+                      total: controller.total,
+                      isPlacingOrder: controller.isPlacingOrder.value,
+                      onPlaceOrder: controller.placeOrder,
+                    ),
+                  );
+
+                  // Wide screens: details on the left, summary on the right.
+                  if (layout.isExpanded) {
+                    return Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(
+                          maxWidth: Responsive.gridMaxWidth,
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _SectionTitle(
-                              title: 'Order Items',
-                              trailing: '${controller.itemCount} item(s)',
+                            Expanded(
+                              child: details(
+                                EdgeInsets.fromLTRB(
+                                  layout.pagePadding,
+                                  16,
+                                  16,
+                                  24,
+                                ),
+                              ),
                             ),
-                            const SizedBox(height: 12),
-                            ...controller.cartItems.map(
-                              (item) => _CheckoutItemRow(item: item),
-                            ),
-                            const SizedBox(height: 24),
-                            _AddressSection(controller: controller),
-                            const SizedBox(height: 24),
-                            const _PaymentMethodSection(),
+                            SizedBox(width: 400, child: summary),
                           ],
                         ),
                       ),
-                    ),
-                    Obx(
-                      () => CheckoutSummary(
-                        subtotal: controller.subtotal,
-                        shipping: controller.shipping,
-                        total: controller.total,
-                        isPlacingOrder: controller.isPlacingOrder.value,
-                        onPlaceOrder: controller.placeOrder,
-                      ),
-                    ),
-                  ],
-                );
-            }
-          }),
-        ),
+                    );
+                  }
+
+                  // Phones and small tablets: one column, summary at bottom.
+                  return Column(
+                    children: [
+                      Expanded(child: details(layout.pageInsets(bottom: 24))),
+                      summary,
+                    ],
+                  );
+                },
+              );
+          }
+        }),
       ),
     );
   }
@@ -99,7 +132,7 @@ class _SectionTitle extends StatelessWidget {
           Text(
             trailing!,
             style: AppTextStyles.bodyMedium.copyWith(
-              color: AppColors.textMuted,
+              color: context.colors.textMuted,
             ),
           ),
       ],
@@ -117,7 +150,7 @@ class _CheckoutItemRow extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Material(
-        color: AppColors.surface,
+        color: context.colors.surface,
         borderRadius: BorderRadius.circular(8),
         child: ListTile(
           title: Text(
@@ -129,7 +162,7 @@ class _CheckoutItemRow extends StatelessWidget {
           subtitle: Text(
             '${item.quantity} x \$${item.product.price.toStringAsFixed(2)}',
             style: AppTextStyles.bodyMedium.copyWith(
-              color: AppColors.textMuted,
+              color: context.colors.textMuted,
             ),
           ),
           trailing: Text(
@@ -204,19 +237,19 @@ class _AddressCard extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Material(
-        color: AppColors.surface,
+        color: context.colors.surface,
         borderRadius: BorderRadius.circular(8),
         child: ListTile(
           onTap: onTap,
           leading: Icon(
             isSelected ? Icons.radio_button_checked : Icons.radio_button_off,
-            color: isSelected ? AppColors.primary : AppColors.textMuted,
+            color: isSelected ? AppColors.primary : context.colors.textMuted,
           ),
           title: Text(address.fullName, style: AppTextStyles.titleMedium),
           subtitle: Text(
             address.summary,
             style: AppTextStyles.bodyMedium.copyWith(
-              color: AppColors.textMuted,
+              color: context.colors.textMuted,
             ),
           ),
         ),
@@ -235,7 +268,13 @@ class _AddressForm extends StatelessWidget {
     return Column(
       children: [
         _Input(controller: controller.fullNameController, label: 'Full name'),
-        _Input(controller: controller.phoneController, label: 'Phone'),
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: PhoneNumberField(
+            controller: controller.phoneController,
+            onChanged: controller.onPhoneChanged,
+          ),
+        ),
         _Input(
           controller: controller.addressLine1Controller,
           label: 'Address line 1',
@@ -244,39 +283,26 @@ class _AddressForm extends StatelessWidget {
           controller: controller.addressLine2Controller,
           label: 'Address line 2',
         ),
-        Row(
-          children: [
-            Expanded(
-              child: _Input(
-                controller: controller.cityController,
-                label: 'City',
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _Input(
-                controller: controller.stateController,
-                label: 'State',
-              ),
-            ),
-          ],
+        ResponsiveFieldPair(
+          // Each _Input already has its own bottom padding.
+          stackedSpacing: 0,
+          first: _Input(controller: controller.cityController, label: 'City'),
+          second: _Input(
+            controller: controller.stateController,
+            label: 'State',
+          ),
         ),
-        Row(
-          children: [
-            Expanded(
-              child: _Input(
-                controller: controller.postalCodeController,
-                label: 'Postal code',
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _Input(
-                controller: controller.countryController,
-                label: 'Country',
-              ),
-            ),
-          ],
+        ResponsiveFieldPair(
+          // Each _Input already has its own bottom padding.
+          stackedSpacing: 0,
+          first: _Input(
+            controller: controller.postalCodeController,
+            label: 'Postal code',
+          ),
+          second: _Input(
+            controller: controller.countryController,
+            label: 'Country',
+          ),
         ),
         const SizedBox(height: 8),
         SizedBox(
@@ -316,37 +342,6 @@ class _Input extends StatelessWidget {
         textInputAction: TextInputAction.next,
         decoration: InputDecoration(labelText: label),
       ),
-    );
-  }
-}
-
-class _PaymentMethodSection extends StatelessWidget {
-  const _PaymentMethodSection();
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const _SectionTitle(title: 'Payment Method'),
-        const SizedBox(height: 12),
-        Material(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(8),
-          child: ListTile(
-            onTap: () => Get.toNamed(AppRoutes.paymentMethod),
-            leading: const Icon(Icons.payments_outlined),
-            title: Text('Payment Method', style: AppTextStyles.titleMedium),
-            subtitle: Text(
-              'Payment integration will be added later.',
-              style: AppTextStyles.bodyMedium.copyWith(
-                color: AppColors.textMuted,
-              ),
-            ),
-            trailing: const Icon(Icons.chevron_right),
-          ),
-        ),
-      ],
     );
   }
 }

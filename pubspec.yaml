@@ -1,5 +1,5 @@
 name: flutter_ecommerce_app
-description: "A new Flutter project."
+description: "Avero - multi-vendor e-commerce app."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -19,7 +19,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 version: 1.0.0+1
 
 environment:
-  sdk: ^3.13.3
+  sdk: ^3.12.0
 
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions
@@ -37,6 +37,7 @@ dependencies:
   get: ^4.7.3
   google_sign_in: ^7.2.0
   image_picker: ^1.2.0
+  intl_phone_field: ^3.2.0
   path_provider: ^2.1.5
 
 dev_dependencies:
@@ -49,6 +50,7 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.4
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -96,3 +98,25 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+# Launcher icons are generated from the same Avero logo used on Splash.
+# Regenerate with: dart run flutter_launcher_icons
+flutter_launcher_icons:
+  image_path: "assets/images/brand/avero_logo.png"
+  android: "ic_launcher"
+  min_sdk_android: 21
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "assets/images/brand/avero_logo.png"
+  ios: true
+  remove_alpha_ios: true
+  background_color_ios: "#FFFFFF"
+  web:
+    generate: true
+    image_path: "assets/images/brand/avero_logo.png"
+    background_color: "#FFFFFF"
+    theme_color: "#8E6CEF"
+  windows:
+    generate: true
+    image_path: "assets/images/brand/avero_logo.png"
+    icon_size: 48
+

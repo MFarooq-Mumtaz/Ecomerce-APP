@@ -29,13 +29,10 @@ class SplashController extends GetxController {
       return;
     }
 
+    // Customers and vendors both land on the normal customer Home.
+    // Vendors open their dashboard manually from Profile > Manage Store.
     try {
       await _userRepository.ensureCustomerProfileExists(user);
-      final profile = await _userRepository.getUserProfile(user.uid);
-      if (profile.isVendor) {
-        Get.offAllNamed(AppRoutes.vendorDashboard);
-        return;
-      }
     } catch (_) {
       // Home can still render catalog data while profile recovery is retried
       // by the next successful auth flow.
