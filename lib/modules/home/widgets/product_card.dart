@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_palette.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/utils/product_image_url.dart';
 import '../../../core/utils/responsive.dart';
 import '../../../core/widgets/product_image.dart';
 import '../../../data/models/product_model.dart';
@@ -21,8 +22,9 @@ class ProductCard extends StatelessWidget {
     this.width,
   });
 
-  /// Image ratio from the Avero design (159 x 220).
-  static const imageAspectRatio = 159 / 220;
+  /// Product cards now use a near-square media area so Cloudinary product
+  /// photos and transparent PNG marks are visible without tall cropping.
+  static const imageAspectRatio = 1.04;
 
   /// Height a card needs at [width], including the name/price area for the
   /// current text scale. Grids and horizontal lists use this so a card
@@ -31,7 +33,17 @@ class ProductCard extends StatelessWidget {
     final lineHeight =
         textScaler.scale(AppTextStyles.bodyMedium.fontSize!) *
         AppTextStyles.bodyMedium.height!;
-    final infoHeight = 8 + lineHeight + 6 + math.max(24, lineHeight) + 14;
+    final vendorLineHeight =
+        textScaler.scale(AppTextStyles.bodyMedium.fontSize! - 1) *
+        AppTextStyles.bodyMedium.height!;
+    final infoHeight =
+        8 +
+        lineHeight +
+        3 +
+        vendorLineHeight +
+        6 +
+        math.max(24, lineHeight) +
+        12;
     return (width / imageAspectRatio) + infoHeight + 2;
   }
 
@@ -85,10 +97,7 @@ class ProductCard extends StatelessWidget {
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
-                    ProductImage(
-                      imageUrl: product.imageUrl,
-                      localImagePath: product.localImagePath,
-                    ),
+                    ProductImage(imageUrl: productImageUrl(product)),
                     Positioned(
                       top: 5,
                       right: 8,
@@ -106,7 +115,7 @@ class ProductCard extends StatelessWidget {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.fromLTRB(8, 8, 8, 14),
+                padding: const EdgeInsets.fromLTRB(8, 8, 8, 12),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -115,6 +124,17 @@ class ProductCard extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: AppTextStyles.bodyMedium,
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      _vendorLabel(product),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        color: context.colors.textMuted,
+                        fontSize: AppTextStyles.bodyMedium.fontSize! - 1,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                     const SizedBox(height: 6),
                     Row(
@@ -160,6 +180,15 @@ class ProductCard extends StatelessWidget {
   }
 
   String _formatPrice(double value) => '\$${value.toStringAsFixed(2)}';
+
+  String _vendorLabel(ProductModel product) {
+    final vendorName = product.vendorName?.trim();
+    if (vendorName != null && vendorName.isNotEmpty) {
+      return vendorName;
+    }
+
+    return 'Vendor name pending';
+  }
 }
 
 class _CircleActionButton extends StatelessWidget {

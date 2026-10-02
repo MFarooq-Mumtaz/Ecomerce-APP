@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_palette.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../core/utils/product_image_url.dart';
 import '../../../../core/widgets/product_image.dart';
 import '../../../../data/models/product_model.dart';
 
@@ -40,10 +41,7 @@ class VendorProductItem extends StatelessWidget {
                     width: imageSize,
                     height: imageSize,
                     color: Colors.white,
-                    child: ProductImage(
-                      imageUrl: product.imageUrl,
-                      localImagePath: product.localImagePath,
-                    ),
+                    child: ProductImage(imageUrl: productImageUrl(product)),
                   ),
                 ),
                 const SizedBox(width: 12),

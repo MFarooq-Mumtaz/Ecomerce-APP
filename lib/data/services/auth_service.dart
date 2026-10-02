@@ -21,9 +21,30 @@ class AuthService {
 
   User? get currentUser => _firebaseAuth.currentUser;
 
+  void ensureRecentLoginForAccountDeletion() {
+    final user = currentUser;
+    final lastSignIn = user?.metadata.lastSignInTime;
+    if (user == null || lastSignIn == null) {
+      throw const AuthFailure('Sign in again before deleting your account.');
+    }
+
+    final age = DateTime.now().difference(lastSignIn);
+    if (age.inMinutes >= 5) {
+      throw const AuthFailure('Sign in again before deleting your account.');
+    }
+  }
+
   Future<void> updateDisplayName(String displayName) {
     return _firebaseAuth.currentUser?.updateDisplayName(displayName.trim()) ??
         Future<void>.value();
+  }
+
+  Future<void> deleteCurrentUser() async {
+    try {
+      await currentUser?.delete();
+    } on FirebaseAuthException catch (error) {
+      throw AuthFailure(_mapDeleteAccountMessage(error.code));
+    }
   }
 
   Future<void> signOut() async {
@@ -170,6 +191,17 @@ class AuthService {
         return 'Too many requests. Please wait and try again later.';
       default:
         return 'Could not send the reset email. Please try again.';
+    }
+  }
+
+  String _mapDeleteAccountMessage(String code) {
+    switch (code) {
+      case 'requires-recent-login':
+        return 'Sign in again before deleting your account.';
+      case 'network-request-failed':
+        return 'Check your internet connection and try again.';
+      default:
+        return 'Could not delete account. Please try again.';
     }
   }
 

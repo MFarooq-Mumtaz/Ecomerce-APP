@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../../../core/routes/app_routes.dart';
-import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_palette.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/responsive.dart';
@@ -39,7 +37,7 @@ class HomeView extends GetView<HomeController> {
             spacing: 12,
           );
           // Landscape phones have little height, so the header moves up.
-          final topPadding = layout.height < 560 ? 16.0 : 44.0;
+          final topPadding = layout.height < 560 ? 10.0 : 22.0;
 
           return Obx(
             () => RefreshIndicator(
@@ -86,7 +84,7 @@ class HomeView extends GetView<HomeController> {
                       SliverPadding(
                         padding: EdgeInsets.fromLTRB(
                           horizontalPadding,
-                          24,
+                          18,
                           horizontalPadding,
                           0,
                         ),
@@ -94,34 +92,52 @@ class HomeView extends GetView<HomeController> {
                           child: _CategoriesSection(controller: controller),
                         ),
                       ),
-                    SliverPadding(
-                      padding: EdgeInsets.fromLTRB(
-                        horizontalPadding,
-                        24,
-                        horizontalPadding,
-                        32,
+                    if (controller.isSearching)
+                      SliverPadding(
+                        padding: EdgeInsets.fromLTRB(
+                          horizontalPadding,
+                          18,
+                          horizontalPadding,
+                          32,
+                        ),
+                        sliver: SliverToBoxAdapter(
+                          child: _ProductSection(
+                            title: 'Search Results',
+                            products: controller.searchResults,
+                            emptyMessage: 'No matching products found.',
+                            cardWidth: cardWidth,
+                            onProductTap: controller.openProduct,
+                          ),
+                        ),
+                      )
+                    else if (controller.categoryProductSections.isEmpty)
+                      SliverPadding(
+                        padding: EdgeInsets.fromLTRB(
+                          horizontalPadding,
+                          18,
+                          horizontalPadding,
+                          32,
+                        ),
+                        sliver: SliverToBoxAdapter(
+                          child: _ProductSection(
+                            title: 'Products',
+                            products: const <ProductModel>[],
+                            emptyMessage:
+                                'Active products will appear here after '
+                                'vendors add them.',
+                            cardWidth: cardWidth,
+                            onProductTap: controller.openProduct,
+                          ),
+                        ),
+                      )
+                    else
+                      _CategoryProductSections(
+                        sections: controller.categoryProductSections,
+                        horizontalPadding: horizontalPadding,
+                        cardWidth: cardWidth,
+                        onProductTap: controller.openProduct,
+                        onSeeAll: controller.openProductSection,
                       ),
-                      sliver: SliverToBoxAdapter(
-                        child: controller.isSearching
-                            ? _ProductSection(
-                                title: 'Search Results',
-                                products: controller.searchResults,
-                                emptyMessage: 'No matching products found.',
-                                cardWidth: cardWidth,
-                                onProductTap: controller.openProduct,
-                              )
-                            : _ProductSection(
-                                title: 'Top Selling',
-                                products: controller.topSellingProducts,
-                                emptyMessage:
-                                    'Best sellers will appear here once '
-                                    'orders are placed.',
-                                cardWidth: cardWidth,
-                                onProductTap: controller.openProduct,
-                                onSeeAll: controller.openTopSelling,
-                              ),
-                      ),
-                    ),
                   ],
                 ],
               ),
@@ -140,59 +156,21 @@ class _HomeHeader extends GetView<HomeController> {
 
   @override
   Widget build(BuildContext context) {
-    final cartController = Get.find<CartController>();
-
     return Column(
       children: [
         Row(
           children: [
             const AveroLogo(size: 40),
-            const Spacer(),
-            Container(
-              height: 40,
-              padding: const EdgeInsets.symmetric(horizontal: 14),
-              decoration: BoxDecoration(
-                color: context.colors.surface,
-                borderRadius: BorderRadius.circular(100),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'Men',
-                    style: AppTextStyles.bodyMedium.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  const Icon(Icons.keyboard_arrow_down, size: 16),
-                ],
-              ),
-            ),
-            const Spacer(),
-            Obx(
-              () => IconButton.filled(
-                tooltip: 'Cart',
-                onPressed: () => Get.toNamed(AppRoutes.cart),
-                style: IconButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                ),
-                icon: Badge(
-                  isLabelVisible: cartController.itemCount > 0,
-                  label: Text(cartController.itemCount.toString()),
-                  child: const Icon(Icons.shopping_bag_outlined, size: 18),
-                ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: HomeSearchField(
+                controller: controller.searchController,
+                onChanged: controller.updateSearch,
+                onClear: controller.clearSearch,
+                hasQuery: searchHasQuery,
               ),
             ),
           ],
-        ),
-        const SizedBox(height: 24),
-        HomeSearchField(
-          controller: controller.searchController,
-          onChanged: controller.updateSearch,
-          onClear: controller.clearSearch,
-          hasQuery: searchHasQuery,
         ),
       ],
     );
@@ -213,7 +191,7 @@ class _CategoriesSection extends StatelessWidget {
           title: 'Categories',
           onSeeAll: controller.openAllCategories,
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: 10),
         SizedBox(
           // Circle (56) + gap + one label line at the current font size.
           height: 66 + MediaQuery.textScalerOf(context).scale(20),
@@ -232,6 +210,47 @@ class _CategoriesSection extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _CategoryProductSections extends StatelessWidget {
+  const _CategoryProductSections({
+    required this.sections,
+    required this.horizontalPadding,
+    required this.cardWidth,
+    required this.onProductTap,
+    required this.onSeeAll,
+  });
+
+  final List<HomeProductSection> sections;
+  final double horizontalPadding;
+  final double cardWidth;
+  final ValueChanged<ProductModel> onProductTap;
+  final ValueChanged<HomeProductSection> onSeeAll;
+
+  @override
+  Widget build(BuildContext context) {
+    return SliverList(
+      delegate: SliverChildBuilderDelegate((context, index) {
+        final section = sections[index];
+        return Padding(
+          padding: EdgeInsets.fromLTRB(
+            horizontalPadding,
+            18,
+            horizontalPadding,
+            index == sections.length - 1 ? 32 : 0,
+          ),
+          child: _ProductSection(
+            title: section.title,
+            products: section.products,
+            emptyMessage: 'No products in this category yet.',
+            cardWidth: cardWidth,
+            onProductTap: onProductTap,
+            onSeeAll: section.category == null ? null : () => onSeeAll(section),
+          ),
+        );
+      }, childCount: sections.length),
     );
   }
 }
@@ -262,7 +281,7 @@ class _ProductSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         HomeSectionHeader(title: title, onSeeAll: onSeeAll),
-        const SizedBox(height: 14),
+        const SizedBox(height: 10),
         if (products.isEmpty)
           Container(
             width: double.infinity,
@@ -299,7 +318,10 @@ class _ProductSection extends StatelessWidget {
                     isInCart: cartController.isInCart(product.id),
                     onWishlistTap: () =>
                         wishlistController.toggleProduct(product),
-                    onCartTap: () => cartController.addProduct(product),
+                    onCartTap: () => cartController.addProduct(
+                      product,
+                      openCartAfterAdd: true,
+                    ),
                   ),
                 );
               },

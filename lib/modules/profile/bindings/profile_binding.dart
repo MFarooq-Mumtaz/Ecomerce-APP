@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import '../../../data/repositories/auth_repository.dart';
 import '../../../data/repositories/user_repository.dart';
 import '../../../data/services/auth_service.dart';
+import '../../../data/services/cloudinary_service.dart';
 import '../controller/profile_controller.dart';
 
 class ProfileBinding extends Bindings {
@@ -14,6 +15,7 @@ class ProfileBinding extends Bindings {
           Get.find<AuthService>(),
           Get.find<AuthRepository>(),
           Get.find<UserRepository>(),
+          Get.find<CloudinaryService>(),
         ),
       );
     }

@@ -45,7 +45,7 @@ class VendorProductsView extends GetView<VendorProductsController> {
             case VendorProductsStatus.empty:
               return AppEmptyState(
                 title: 'No products yet',
-                message: 'Add your first product to start selling on Avero.',
+                message: 'Add your first product to start selling on MIRA.',
                 icon: Icons.inventory_2_outlined,
               );
             case VendorProductsStatus.success:

@@ -7,7 +7,6 @@ import 'routes/app_pages.dart';
 import 'routes/app_routes.dart';
 import 'theme/app_palette.dart';
 import 'theme/app_theme.dart';
-import 'theme/theme_controller.dart';
 import 'widgets/unfocus_on_tap.dart';
 
 class AveroApp extends StatelessWidget {
@@ -15,15 +14,11 @@ class AveroApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final themeController = Get.find<ThemeController>();
-
     return GetMaterialApp(
-      title: 'Avero',
+      title: 'Mira',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
-      darkTheme: AppTheme.dark,
-      // Later changes go through ThemeController -> Get.changeThemeMode.
-      themeMode: themeController.themeMode.value,
+      themeMode: ThemeMode.light,
       initialBinding: InitialBinding(),
       initialRoute: AppRoutes.splash,
       getPages: AppPages.pages,

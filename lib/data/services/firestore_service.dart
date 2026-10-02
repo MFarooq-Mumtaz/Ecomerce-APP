@@ -77,6 +77,16 @@ class FirestoreService {
     return products.where('vendorId', isEqualTo: vendorId).limit(100).get();
   }
 
+  Future<void> deleteUserOwnedData(String uid) async {
+    await _deleteQuery(products.where('vendorId', isEqualTo: uid).limit(100));
+    await _deleteQuery(wishlist(uid).limit(100));
+    await _deleteQuery(cart(uid).limit(100));
+    await _deleteQuery(addresses(uid).limit(100));
+
+    await vendors.doc(uid).delete();
+    await users.doc(uid).delete();
+  }
+
   Future<String> createVendorProduct(Map<String, Object?> data) async {
     final productDocument = products.doc();
     await productDocument.set(data);
@@ -381,5 +391,20 @@ class FirestoreService {
       'photoUrl': photoUrl,
       'updatedAt': FieldValue.serverTimestamp(),
     });
+  }
+
+  Future<void> _deleteQuery(Query<Map<String, dynamic>> query) async {
+    while (true) {
+      final snapshot = await query.get();
+      if (snapshot.docs.isEmpty) {
+        return;
+      }
+
+      final batch = _firestore.batch();
+      for (final document in snapshot.docs) {
+        batch.delete(document.reference);
+      }
+      await batch.commit();
+    }
   }
 }

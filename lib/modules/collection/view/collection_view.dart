@@ -98,7 +98,10 @@ class CollectionView extends GetView<CollectionController> {
                             isInCart: cartController.isInCart(product.id),
                             onWishlistTap: () =>
                                 wishlistController.toggleProduct(product),
-                            onCartTap: () => cartController.addProduct(product),
+                            onCartTap: () => cartController.addProduct(
+                              product,
+                              openCartAfterAdd: true,
+                            ),
                           ),
                         );
                       },

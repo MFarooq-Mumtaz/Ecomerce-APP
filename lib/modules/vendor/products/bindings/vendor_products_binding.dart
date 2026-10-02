@@ -1,8 +1,9 @@
 import 'package:get/get.dart';
 
 import '../../../../data/repositories/product_repository.dart';
+import '../../../../data/repositories/vendor_repository.dart';
 import '../../../../data/services/auth_service.dart';
-import '../../../../data/services/local_product_image_service.dart';
+import '../../../../data/services/cloudinary_service.dart';
 import '../controller/vendor_product_form_controller.dart';
 import '../controller/vendor_products_controller.dart';
 
@@ -13,7 +14,7 @@ class VendorProductsBinding extends Bindings {
       () => VendorProductsController(
         Get.find<AuthService>(),
         Get.find<ProductRepository>(),
-        Get.find<LocalProductImageService>(),
+        Get.find<VendorRepository>(),
       ),
     );
   }
@@ -26,7 +27,8 @@ class VendorProductFormBinding extends Bindings {
       () => VendorProductFormController(
         Get.find<AuthService>(),
         Get.find<ProductRepository>(),
-        Get.find<LocalProductImageService>(),
+        Get.find<VendorRepository>(),
+        Get.find<CloudinaryService>(),
       ),
     );
   }

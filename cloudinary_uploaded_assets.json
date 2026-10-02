@@ -1,0 +1,82 @@
+[
+  {
+    "local": "D:\\Flutter\\Flutter Ecomerce\\assets\\images\\demo_catalog\\category_accessories.jpeg",
+    "public_id": "avero/demo_catalog/oh77ppn1ygo34lan5su9",
+    "secure_url": "https://res.cloudinary.com/dtwghsqhp/image/upload/v1790876582/avero/demo_catalog/oh77ppn1ygo34lan5su9.png"
+  },
+  {
+    "local": "D:\\Flutter\\Flutter Ecomerce\\assets\\images\\demo_catalog\\category_accessories.png",
+    "public_id": "avero/demo_catalog/zxuiizfeozatzjxti3jd",
+    "secure_url": "https://res.cloudinary.com/dtwghsqhp/image/upload/v1790876585/avero/demo_catalog/zxuiizfeozatzjxti3jd.png"
+  },
+  {
+    "local": "D:\\Flutter\\Flutter Ecomerce\\assets\\images\\demo_catalog\\category_bag.png",
+    "public_id": "avero/demo_catalog/qflthp1nuew1kvaadiiq",
+    "secure_url": "https://res.cloudinary.com/dtwghsqhp/image/upload/v1790876589/avero/demo_catalog/qflthp1nuew1kvaadiiq.png"
+  },
+  {
+    "local": "D:\\Flutter\\Flutter Ecomerce\\assets\\images\\demo_catalog\\category_hoodies.png",
+    "public_id": "avero/demo_catalog/zrwqr7wxa4abdihyotqa",
+    "secure_url": "https://res.cloudinary.com/dtwghsqhp/image/upload/v1790876591/avero/demo_catalog/zrwqr7wxa4abdihyotqa.png"
+  },
+  {
+    "local": "D:\\Flutter\\Flutter Ecomerce\\assets\\images\\demo_catalog\\category_shoes.png",
+    "public_id": "avero/demo_catalog/ybpvjuvclsdmgleglm7n",
+    "secure_url": "https://res.cloudinary.com/dtwghsqhp/image/upload/v1790876594/avero/demo_catalog/ybpvjuvclsdmgleglm7n.png"
+  },
+  {
+    "local": "D:\\Flutter\\Flutter Ecomerce\\assets\\images\\demo_catalog\\category_shorts.png",
+    "public_id": "avero/demo_catalog/woodmvk3lqnwoqsyioiy",
+    "secure_url": "https://res.cloudinary.com/dtwghsqhp/image/upload/v1790876597/avero/demo_catalog/woodmvk3lqnwoqsyioiy.png"
+  },
+  {
+    "local": "D:\\Flutter\\Flutter Ecomerce\\assets\\images\\demo_catalog\\product_01.png",
+    "public_id": "avero/demo_catalog/fw0gffrjyrdfwktb5dey",
+    "secure_url": "https://res.cloudinary.com/dtwghsqhp/image/upload/v1790876618/avero/demo_catalog/fw0gffrjyrdfwktb5dey.png"
+  },
+  {
+    "local": "D:\\Flutter\\Flutter Ecomerce\\assets\\images\\demo_catalog\\product_02.png",
+    "public_id": "avero/demo_catalog/e5saeqacpsva6ghmgdmw",
+    "secure_url": "https://res.cloudinary.com/dtwghsqhp/image/upload/v1790876633/avero/demo_catalog/e5saeqacpsva6ghmgdmw.png"
+  },
+  {
+    "local": "D:\\Flutter\\Flutter Ecomerce\\assets\\images\\demo_catalog\\product_03.png",
+    "public_id": "avero/demo_catalog/nvmh7vnokediuepj54ux",
+    "secure_url": "https://res.cloudinary.com/dtwghsqhp/image/upload/v1790876651/avero/demo_catalog/nvmh7vnokediuepj54ux.png"
+  },
+  {
+    "local": "D:\\Flutter\\Flutter Ecomerce\\assets\\images\\demo_catalog\\product_04.png",
+    "public_id": "avero/demo_catalog/xhtfoys56pdwfpqydokf",
+    "secure_url": "https://res.cloudinary.com/dtwghsqhp/image/upload/v1790876657/avero/demo_catalog/xhtfoys56pdwfpqydokf.png"
+  },
+  {
+    "local": "D:\\Flutter\\Flutter Ecomerce\\assets\\images\\demo_catalog\\product_05.png",
+    "public_id": "avero/demo_catalog/e0ahj9wladqpkz0ehnnl",
+    "secure_url": "https://res.cloudinary.com/dtwghsqhp/image/upload/v1790876691/avero/demo_catalog/e0ahj9wladqpkz0ehnnl.png"
+  },
+  {
+    "local": "D:\\Flutter\\Flutter Ecomerce\\assets\\images\\demo_catalog\\product_06.png",
+    "public_id": "avero/demo_catalog/eayk9dca8xvnczs7mman",
+    "secure_url": "https://res.cloudinary.com/dtwghsqhp/image/upload/v1790876701/avero/demo_catalog/eayk9dca8xvnczs7mman.png"
+  },
+  {
+    "local": "D:\\Flutter\\Flutter Ecomerce\\assets\\images\\demo_catalog\\product_07.png",
+    "public_id": "avero/demo_catalog/qwpzjha0olx3rdjoutzb",
+    "secure_url": "https://res.cloudinary.com/dtwghsqhp/image/upload/v1790876713/avero/demo_catalog/qwpzjha0olx3rdjoutzb.png"
+  },
+  {
+    "local": "D:\\Flutter\\Flutter Ecomerce\\assets\\images\\demo_catalog\\product_08.png",
+    "public_id": "avero/demo_catalog/erkrn2enp6mwos8m6ujt",
+    "secure_url": "https://res.cloudinary.com/dtwghsqhp/image/upload/v1790876719/avero/demo_catalog/erkrn2enp6mwos8m6ujt.png"
+  },
+  {
+    "local": "D:\\Flutter\\Flutter Ecomerce\\assets\\images\\brand\\avero_logo.png",
+    "public_id": "avero/app_assets/olepw42qfrwxcifhl2be",
+    "secure_url": "https://res.cloudinary.com/dtwghsqhp/image/upload/v1790876759/avero/app_assets/olepw42qfrwxcifhl2be.png"
+  },
+  {
+    "local": "D:\\Flutter\\Flutter Ecomerce\\assets\\images\\auth\\google.png",
+    "public_id": "avero/app_assets/kskidzm91pr5ac4fchu4",
+    "secure_url": "https://res.cloudinary.com/dtwghsqhp/image/upload/v1790876762/avero/app_assets/kskidzm91pr5ac4fchu4.png"
+  }
+]

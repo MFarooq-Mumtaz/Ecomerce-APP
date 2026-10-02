@@ -254,6 +254,7 @@ service cloud.firestore {
         'categoryId',
         'categoryName',
         'vendorId',
+        'vendorName',
         'stock',
         'compareAtPrice',
         'isActive',
@@ -289,6 +290,11 @@ service cloud.firestore {
           || request.resource.data.categoryName is string
         )
         && request.resource.data.vendorId == request.auth.uid
+        && (
+          !('vendorName' in request.resource.data)
+          || request.resource.data.vendorName == null
+          || request.resource.data.vendorName is string
+        )
         && request.resource.data.stock is int
         && request.resource.data.stock >= 0
         && (
@@ -323,6 +329,7 @@ service cloud.firestore {
           'localImagePath',
           'categoryId',
           'categoryName',
+          'vendorName',
           'stock',
           'compareAtPrice',
           'isActive',
@@ -371,7 +378,7 @@ service cloud.firestore {
           || hasValidSelfVendorConversion(userId)
         );
 
-      allow delete: if false;
+      allow delete: if isOwner(userId);
 
       match /wishlist/{productId} {
         allow read, list: if isOwner(userId);
@@ -398,7 +405,8 @@ service cloud.firestore {
         allow create: if isOwner(userId)
           && hasOnlyAddressFields()
           && hasValidAddressValues();
-        allow update, delete: if false;
+        allow update: if false;
+        allow delete: if isOwner(userId);
       }
     }
 
@@ -433,7 +441,8 @@ service cloud.firestore {
       allow create: if isSignedIn()
         && hasOnlyVendorFields()
         && hasValidVendorCreate(vendorId);
-      allow update, delete: if false;
+      allow update: if false;
+      allow delete: if isSignedIn() && request.auth.uid == vendorId;
     }
 
     match /{document=**} {

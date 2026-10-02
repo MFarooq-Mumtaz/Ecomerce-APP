@@ -7,8 +7,8 @@ import '../../../data/repositories/user_repository.dart';
 import '../../../data/repositories/vendor_repository.dart';
 import '../../../data/repositories/wishlist_repository.dart';
 import '../../../data/services/auth_service.dart';
+import '../../../data/services/cloudinary_service.dart';
 import '../../../data/services/firestore_service.dart';
-import '../../../data/services/local_product_image_service.dart';
 import '../../cart/controller/cart_controller.dart';
 import '../../collection/controller/collection_controller.dart';
 import '../../home/controller/home_controller.dart';
@@ -22,11 +22,8 @@ class AppShellBinding extends Bindings {
     if (!Get.isRegistered<FirestoreService>()) {
       Get.lazyPut<FirestoreService>(FirestoreService.new, fenix: true);
     }
-    if (!Get.isRegistered<LocalProductImageService>()) {
-      Get.lazyPut<LocalProductImageService>(
-        LocalProductImageService.new,
-        fenix: true,
-      );
+    if (!Get.isRegistered<CloudinaryService>()) {
+      Get.lazyPut<CloudinaryService>(CloudinaryService.new, fenix: true);
     }
     if (!Get.isRegistered<ProductRepository>()) {
       Get.lazyPut<ProductRepository>(
@@ -87,6 +84,7 @@ class AppShellBinding extends Bindings {
           Get.find<AuthService>(),
           Get.find<AuthRepository>(),
           Get.find<UserRepository>(),
+          Get.find<CloudinaryService>(),
         ),
       );
     }

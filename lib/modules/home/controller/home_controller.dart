@@ -29,6 +29,50 @@ class HomeController extends GetxController {
 
   bool get isSearching => searchQuery.value.trim().isNotEmpty;
 
+  List<HomeProductSection> get categoryProductSections {
+    final sections = <HomeProductSection>[];
+    final usedProductIds = <String>{};
+
+    for (final category in categories) {
+      final categoryProducts = products.where((product) {
+        return product.isActive &&
+            !usedProductIds.contains(product.id) &&
+            _belongsToCategory(product, category);
+      }).toList()..sort(_newestFirst);
+
+      if (categoryProducts.isEmpty) {
+        continue;
+      }
+
+      usedProductIds.addAll(categoryProducts.map((product) => product.id));
+      sections.add(
+        HomeProductSection(
+          title: category.name,
+          products: categoryProducts,
+          category: category,
+        ),
+      );
+    }
+
+    final uncategorized = <String, List<ProductModel>>{};
+    for (final product in products) {
+      if (!product.isActive || usedProductIds.contains(product.id)) {
+        continue;
+      }
+
+      final title = _cleanSectionTitle(product.categoryName);
+      uncategorized.putIfAbsent(title, () => <ProductModel>[]).add(product);
+    }
+
+    final fallbackTitles = uncategorized.keys.toList()..sort();
+    for (final title in fallbackTitles) {
+      final sectionProducts = uncategorized[title]!..sort(_newestFirst);
+      sections.add(HomeProductSection(title: title, products: sectionProducts));
+    }
+
+    return sections;
+  }
+
   /// Search runs over the whole active catalog, not only Top Selling.
   List<ProductModel> get searchResults {
     final query = searchQuery.value.trim().toLowerCase();
@@ -132,6 +176,13 @@ class HomeController extends GetxController {
     );
   }
 
+  void openProductSection(HomeProductSection section) {
+    final category = section.category;
+    if (category != null) {
+      openCategory(category);
+    }
+  }
+
   void openProduct(ProductModel product) {
     FocusManager.instance.primaryFocus?.unfocus();
     Get.toNamed(AppRoutes.productDetail, arguments: product);
@@ -142,4 +193,48 @@ class HomeController extends GetxController {
     searchController.dispose();
     super.onClose();
   }
+
+  bool _belongsToCategory(ProductModel product, CategoryModel category) {
+    final categoryId = product.categoryId?.trim();
+    if (categoryId != null && categoryId.isNotEmpty) {
+      return categoryId == category.id;
+    }
+
+    return _normalize(product.categoryName) == _normalize(category.name);
+  }
+
+  int _newestFirst(ProductModel a, ProductModel b) {
+    final aDate = a.createdAt;
+    final bDate = b.createdAt;
+    if (aDate != null && bDate != null) {
+      final dateOrder = bDate.compareTo(aDate);
+      if (dateOrder != 0) {
+        return dateOrder;
+      }
+    }
+
+    return a.name.compareTo(b.name);
+  }
+
+  String _cleanSectionTitle(String? value) {
+    final title = value?.trim();
+    if (title == null || title.isEmpty) {
+      return 'More Products';
+    }
+    return title;
+  }
+
+  String _normalize(String? value) => value?.trim().toLowerCase() ?? '';
+}
+
+class HomeProductSection {
+  const HomeProductSection({
+    required this.title,
+    required this.products,
+    this.category,
+  });
+
+  final String title;
+  final List<ProductModel> products;
+  final CategoryModel? category;
 }

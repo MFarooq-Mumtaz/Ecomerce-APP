@@ -85,6 +85,14 @@ class UserRepository {
     }
   }
 
+  Future<void> deleteUserOwnedData(String uid) async {
+    try {
+      await _firestoreService.deleteUserOwnedData(uid);
+    } catch (_) {
+      throw const UserProfileFailure('Unable to delete user data.');
+    }
+  }
+
   Future<bool> _createCustomerProfileIfMissing({
     required User user,
     required String displayName,
@@ -116,6 +124,6 @@ class UserRepository {
       return fallback;
     }
 
-    return user.email?.split('@').first ?? 'Avero Customer';
+    return user.email?.split('@').first ?? 'MIRA Customer';
   }
 }

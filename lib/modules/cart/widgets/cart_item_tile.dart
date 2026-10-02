@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_palette.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/utils/product_image_url.dart';
 import '../../../core/widgets/product_image.dart';
 import '../../../data/repositories/cart_repository.dart';
 
@@ -40,8 +41,7 @@ class CartItemTile extends StatelessWidget {
                   child: SizedBox.square(
                     dimension: imageSize,
                     child: ProductImage(
-                      imageUrl: item.product.imageUrl,
-                      localImagePath: item.product.localImagePath,
+                      imageUrl: productImageUrl(item.product),
                     ),
                   ),
                 ),

@@ -8,7 +8,7 @@ class AveroLogo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Image.asset(
-      'assets/images/brand/avero_logo.png',
+      'assets/images/brand/mira_bag_mark.png',
       width: size,
       height: size,
       fit: BoxFit.contain,

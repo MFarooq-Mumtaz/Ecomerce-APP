@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -175,10 +177,9 @@ class _ProductImagePicker extends StatelessWidget {
           borderRadius: BorderRadius.circular(8),
           child: AspectRatio(
             aspectRatio: 16 / 10,
-            child: ProductImage(
-              imageUrl: imageUrl,
-              localImagePath: localImagePath,
-            ),
+            child: localImagePath != null && localImagePath!.isNotEmpty
+                ? _PickedImagePreview(path: localImagePath!)
+                : ProductImage(imageUrl: imageUrl),
           ),
         ),
         const SizedBox(height: 10),
@@ -193,12 +194,28 @@ class _ProductImagePicker extends StatelessWidget {
         ),
         const SizedBox(height: 6),
         Text(
-          'Images are stored locally on this device for the current demo.',
+          'Images are uploaded to Cloudinary and saved with this product.',
           style: AppTextStyles.bodyMedium.copyWith(
             color: context.colors.textMuted,
           ),
         ),
       ],
+    );
+  }
+}
+
+class _PickedImagePreview extends StatelessWidget {
+  const _PickedImagePreview({required this.path});
+
+  final String path;
+
+  @override
+  Widget build(BuildContext context) {
+    return Image.file(
+      File(path),
+      fit: BoxFit.cover,
+      errorBuilder: (context, error, stackTrace) =>
+          const ProductImageFallback(icon: Icons.broken_image_outlined),
     );
   }
 }

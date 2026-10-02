@@ -59,4 +59,15 @@ class AuthRepository {
   Future<void> signOut() {
     return _authService.signOut();
   }
+
+  Future<void> deleteCurrentAccount() async {
+    final user = _authService.currentUser;
+    if (user == null) {
+      throw const AuthFailure('Sign in again before deleting your account.');
+    }
+
+    _authService.ensureRecentLoginForAccountDeletion();
+    await _userRepository.deleteUserOwnedData(user.uid);
+    await _authService.deleteCurrentUser();
+  }
 }

@@ -5,20 +5,23 @@ import 'package:image_picker/image_picker.dart';
 import '../../../../data/models/category_model.dart';
 import '../../../../data/models/product_model.dart';
 import '../../../../data/repositories/product_repository.dart';
+import '../../../../data/repositories/vendor_repository.dart';
 import '../../../../data/services/auth_service.dart';
-import '../../../../data/services/local_product_image_service.dart';
+import '../../../../data/services/cloudinary_service.dart';
 import '../../../../core/widgets/app_snackbar.dart';
 
 class VendorProductFormController extends GetxController {
   VendorProductFormController(
     this._authService,
     this._productRepository,
-    this._imageService,
+    this._vendorRepository,
+    this._cloudinaryService,
   );
 
   final AuthService _authService;
   final ProductRepository _productRepository;
-  final LocalProductImageService _imageService;
+  final VendorRepository _vendorRepository;
+  final CloudinaryService _cloudinaryService;
   final _imagePicker = ImagePicker();
 
   final nameController = TextEditingController();
@@ -35,8 +38,7 @@ class VendorProductFormController extends GetxController {
   ProductModel? editingProduct;
 
   bool get isEditing => editingProduct != null;
-  String? get previewLocalImagePath =>
-      pickedImagePath.value ?? editingProduct?.localImagePath;
+  String? get previewLocalImagePath => pickedImagePath.value;
   String? get previewImageUrl =>
       pickedImagePath.value == null ? editingProduct?.imageUrl : null;
 
@@ -100,26 +102,32 @@ class VendorProductFormController extends GetxController {
     }
 
     isSaving.value = true;
-    String? savedLocalImagePath;
     try {
       final category = selectedCategory.value;
       final replacementImagePath = pickedImagePath.value;
+      String? uploadedImageUrl;
       if (replacementImagePath != null && replacementImagePath.isNotEmpty) {
-        savedLocalImagePath = await _imageService.saveProductImage(
+        uploadedImageUrl = (await _cloudinaryService.uploadProductImage(
           replacementImagePath,
-        );
+        )).secureUrl;
       }
+      final vendor = await _vendorRepository.getVendorProfile(vendorId);
+      final storeName = vendor?.storeName.trim();
+      final vendorName = storeName == null || storeName.isEmpty
+          ? editingProduct?.vendorName
+          : storeName;
 
       final product = ProductModel(
         id: editingProduct?.id ?? '',
         name: nameController.text.trim(),
         description: descriptionController.text.trim(),
         price: double.parse(priceController.text.trim()),
-        imageUrl: savedLocalImagePath == null ? editingProduct?.imageUrl : null,
-        localImagePath: savedLocalImagePath ?? editingProduct?.localImagePath,
+        imageUrl: uploadedImageUrl ?? editingProduct?.imageUrl,
+        localImagePath: null,
         categoryId: category?.id,
         categoryName: category?.name,
         vendorId: vendorId,
+        vendorName: vendorName,
         stock: int.parse(stockController.text.trim()),
         isActive: isActive.value,
       );
@@ -129,11 +137,6 @@ class VendorProductFormController extends GetxController {
           vendorId: vendorId,
           product: product,
         );
-        if (savedLocalImagePath != null) {
-          await _imageService.deleteIfOwnedProductImage(
-            editingProduct?.localImagePath,
-          );
-        }
         Get.closeAllSnackbars();
         Get.back();
         AppSnackbar.show('Product', 'Product updated.');
@@ -147,11 +150,11 @@ class VendorProductFormController extends GetxController {
       Get.closeAllSnackbars();
       Get.back();
       AppSnackbar.show('Product', 'Product added.');
+    } on CloudinaryUploadFailure catch (failure) {
+      AppSnackbar.show('Product image', failure.message);
     } on ProductWriteFailure catch (failure) {
-      await _imageService.deleteIfOwnedProductImage(savedLocalImagePath);
       AppSnackbar.show('Product', failure.message);
     } catch (_) {
-      await _imageService.deleteIfOwnedProductImage(savedLocalImagePath);
       AppSnackbar.show('Product', 'Product could not be saved.');
     } finally {
       isSaving.value = false;

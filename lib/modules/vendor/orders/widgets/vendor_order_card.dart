@@ -134,10 +134,7 @@ class _VendorOrderLine extends StatelessWidget {
                   width: imageSize,
                   height: imageSize,
                   color: Colors.white,
-                  child: ProductImage(
-                    imageUrl: item.imageUrl,
-                    localImagePath: item.localImagePath,
-                  ),
+                  child: ProductImage(imageUrl: item.imageUrl),
                 ),
               ),
               const SizedBox(width: 12),

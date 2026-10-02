@@ -5,9 +5,11 @@ import '../../../core/constants/app_layout.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_palette.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/utils/product_image_url.dart';
 import '../../../core/utils/responsive.dart';
 import '../../../core/widgets/app_state_views.dart';
 import '../../../core/widgets/product_image.dart';
+import '../../../data/models/product_model.dart';
 import '../../cart/controller/cart_controller.dart';
 import '../../wishlist/controller/wishlist_controller.dart';
 import '../controller/product_detail_controller.dart';
@@ -73,10 +75,7 @@ class ProductDetailView extends GetView<ProductDetailController> {
                     borderRadius: BorderRadius.circular(8),
                     child: AspectRatio(
                       aspectRatio: 1,
-                      child: ProductImage(
-                        imageUrl: product.imageUrl,
-                        localImagePath: product.localImagePath,
-                      ),
+                      child: ProductImage(imageUrl: productImageUrl(product)),
                     ),
                   );
                   final details = Column(
@@ -84,6 +83,8 @@ class ProductDetailView extends GetView<ProductDetailController> {
                     children: [
                       Text(product.name, style: AppTextStyles.titleLarge),
                       const SizedBox(height: 8),
+                      _VendorName(product: product),
+                      const SizedBox(height: 12),
                       Text(
                         '\$${product.price.toStringAsFixed(2)}',
                         style: AppTextStyles.titleMedium.copyWith(
@@ -117,7 +118,10 @@ class ProductDetailView extends GetView<ProductDetailController> {
                           child: FilledButton.icon(
                             onPressed: isOutOfStock
                                 ? null
-                                : () => cartController.addProduct(product),
+                                : () => cartController.addProduct(
+                                    product,
+                                    openCartAfterAdd: true,
+                                  ),
                             icon: const Icon(Icons.shopping_bag_outlined),
                             label: Text(
                               isOutOfStock
@@ -179,6 +183,42 @@ class ProductDetailView extends GetView<ProductDetailController> {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _VendorName extends StatelessWidget {
+  const _VendorName({required this.product});
+
+  final ProductModel product;
+
+  @override
+  Widget build(BuildContext context) {
+    final vendorName = product.vendorName?.trim();
+    final label = vendorName == null || vendorName.isEmpty
+        ? 'Vendor name pending'
+        : vendorName;
+
+    return Row(
+      children: [
+        Icon(
+          Icons.storefront_outlined,
+          size: 16,
+          color: context.colors.textMuted,
+        ),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Text(
+            'Sold by $label',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: AppTextStyles.bodyMedium.copyWith(
+              color: context.colors.textMuted,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

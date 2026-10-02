@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/widgets/avero_logo.dart';
 import '../../../core/theme/app_palette.dart';
 import '../../../core/utils/responsive.dart';
 
@@ -19,18 +18,14 @@ class SplashView extends StatelessWidget {
             final shortestSide = layout.width < layout.height
                 ? layout.width
                 : layout.height;
-            final logoSize = (shortestSide * 0.34).clamp(88.0, 180.0);
+            final logoSize = (shortestSide * 0.62).clamp(190.0, 360.0);
 
             return Center(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: context.colors.surface,
-                  borderRadius: BorderRadius.circular(logoSize * 0.22),
-                ),
-                child: Padding(
-                  padding: EdgeInsets.all(logoSize * 0.17),
-                  child: AveroLogo(size: logoSize),
-                ),
+              child: Image.asset(
+                'assets/images/brand/mira_splash_logo.png',
+                width: logoSize,
+                height: logoSize,
+                fit: BoxFit.contain,
               ),
             );
           },

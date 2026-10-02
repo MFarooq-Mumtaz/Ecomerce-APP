@@ -104,7 +104,8 @@ class _WishlistProductCard extends StatelessWidget {
         isWishlisted: wishlistController.isWishlisted(product.id),
         isInCart: cartController.isInCart(product.id),
         onWishlistTap: () => wishlistController.toggleProduct(product),
-        onCartTap: () => cartController.addProduct(product),
+        onCartTap: () =>
+            cartController.addProduct(product, openCartAfterAdd: true),
       ),
     );
   }

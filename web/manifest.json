@@ -1,11 +1,11 @@
 {
-    "name": "Avero",
-    "short_name": "Avero",
+    "name": "Mira",
+    "short_name": "Mira",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#FFFFFF",
     "theme_color": "#8E6CEF",
-    "description": "Avero - multi-vendor e-commerce app.",
+    "description": "Mira - multi-vendor e-commerce app.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

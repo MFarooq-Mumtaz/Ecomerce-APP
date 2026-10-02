@@ -9,18 +9,15 @@ import '../../data/repositories/user_repository.dart';
 import '../../data/repositories/vendor_repository.dart';
 import '../../data/repositories/wishlist_repository.dart';
 import '../../data/services/auth_service.dart';
+import '../../data/services/cloudinary_service.dart';
 import '../../data/services/firestore_service.dart';
-import '../../data/services/local_product_image_service.dart';
 
 class InitialBinding extends Bindings {
   @override
   void dependencies() {
     Get.lazyPut<AuthService>(AuthService.new, fenix: true);
     Get.lazyPut<FirestoreService>(FirestoreService.new, fenix: true);
-    Get.lazyPut<LocalProductImageService>(
-      LocalProductImageService.new,
-      fenix: true,
-    );
+    Get.lazyPut<CloudinaryService>(CloudinaryService.new, fenix: true);
     Get.lazyPut<UserRepository>(
       () => UserRepository(Get.find<FirestoreService>()),
       fenix: true,

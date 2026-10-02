@@ -3,7 +3,9 @@ import 'package:get/get.dart';
 import '../../../data/models/product_model.dart';
 import '../../../data/repositories/cart_repository.dart';
 import '../../../data/services/auth_service.dart';
+import '../../../core/routes/app_routes.dart';
 import '../../../core/widgets/app_snackbar.dart';
+import '../../app_shell/controller/app_shell_controller.dart';
 
 enum CartLoadStatus { idle, loading, success, empty, error }
 
@@ -17,10 +19,17 @@ class CartController extends GetxController {
   final items = <CartProductItem>[].obs;
   final busyProductIds = <String>{}.obs;
   final errorMessage = RxnString();
+  final cartVersion = 0.obs;
 
-  int get itemCount => items.fold(0, (total, item) => total + item.quantity);
+  int get itemCount {
+    cartVersion.value;
+    return items.fold(0, (total, item) => total + item.quantity);
+  }
 
-  double get subtotal => items.fold(0, (total, item) => total + item.lineTotal);
+  double get subtotal {
+    cartVersion.value;
+    return items.fold(0, (total, item) => total + item.lineTotal);
+  }
 
   bool isInCart(String productId) =>
       items.any((item) => item.product.id == productId);
@@ -55,6 +64,7 @@ class CartController extends GetxController {
     try {
       final loadedItems = await _cartRepository.getCartProductItems(uid);
       items.assignAll(loadedItems);
+      _notifyCartChanged();
       status.value = items.isEmpty
           ? CartLoadStatus.empty
           : CartLoadStatus.success;
@@ -64,19 +74,26 @@ class CartController extends GetxController {
     }
   }
 
-  Future<void> addProduct(ProductModel product) async {
+  Future<bool> addProduct(
+    ProductModel product, {
+    bool openCartAfterAdd = false,
+  }) async {
     final currentQuantity = quantityFor(product.id);
     final nextQuantity = currentQuantity + 1;
-    await _setProductQuantity(
+    final didUpdate = await _setProductQuantity(
       product: product,
       quantity: nextQuantity,
       successMessage: currentQuantity == 0
           ? '${product.name} added to cart.'
           : '${product.name} quantity updated.',
     );
+    if (didUpdate && openCartAfterAdd) {
+      _openCart();
+    }
+    return didUpdate;
   }
 
-  Future<void> increaseQuantity(CartProductItem item) {
+  Future<bool> increaseQuantity(CartProductItem item) {
     return _setProductQuantity(
       product: item.product,
       quantity: item.quantity + 1,
@@ -84,10 +101,10 @@ class CartController extends GetxController {
     );
   }
 
-  Future<void> decreaseQuantity(CartProductItem item) {
+  Future<bool> decreaseQuantity(CartProductItem item) {
     if (item.quantity <= 1) {
       AppSnackbar.show('Cart', 'Quantity cannot go below 1.');
-      return Future<void>.value();
+      return Future<bool>.value(false);
     }
 
     return _setProductQuantity(
@@ -109,9 +126,11 @@ class CartController extends GetxController {
     }
 
     busyProductIds.add(product.id);
+    busyProductIds.refresh();
     try {
       await _cartRepository.removeProduct(uid: uid, productId: product.id);
       items.removeWhere((item) => item.product.id == product.id);
+      _notifyCartChanged();
       status.value = items.isEmpty
           ? CartLoadStatus.empty
           : CartLoadStatus.success;
@@ -120,10 +139,11 @@ class CartController extends GetxController {
       AppSnackbar.show('Cart', 'Could not update cart. Try again.');
     } finally {
       busyProductIds.remove(product.id);
+      busyProductIds.refresh();
     }
   }
 
-  Future<void> _setProductQuantity({
+  Future<bool> _setProductQuantity({
     required ProductModel product,
     required int quantity,
     required String successMessage,
@@ -131,18 +151,19 @@ class CartController extends GetxController {
     final uid = _authService.currentUser?.uid;
     if (uid == null) {
       AppSnackbar.show('Cart', 'Please sign in to use cart.');
-      return;
+      return false;
     }
 
     if (!_canUseStock(product, quantity)) {
-      return;
+      return false;
     }
 
     if (busyProductIds.contains(product.id)) {
-      return;
+      return false;
     }
 
     busyProductIds.add(product.id);
+    busyProductIds.refresh();
     try {
       await _cartRepository.setQuantity(
         uid: uid,
@@ -152,10 +173,13 @@ class CartController extends GetxController {
       _upsertLocalItem(product, quantity);
       status.value = CartLoadStatus.success;
       AppSnackbar.show('Cart', successMessage);
+      return true;
     } catch (_) {
       AppSnackbar.show('Cart', 'Could not update cart. Try again.');
+      return false;
     } finally {
       busyProductIds.remove(product.id);
+      busyProductIds.refresh();
     }
   }
 
@@ -184,14 +208,40 @@ class CartController extends GetxController {
 
     if (index == -1) {
       items.insert(0, nextItem);
+      _notifyCartChanged();
       return;
     }
 
     items[index] = nextItem;
+    _notifyCartChanged();
+  }
+
+  void _notifyCartChanged() {
+    items.refresh();
+    cartVersion.value += 1;
+  }
+
+  void _openCart() {
+    if (Get.isRegistered<AppShellController>()) {
+      Get.find<AppShellController>().selectTab(2);
+      if (Get.currentRoute == AppRoutes.home) {
+        return;
+      }
+
+      Get.until(
+        (route) => route.settings.name == AppRoutes.home || route.isFirst,
+      );
+      if (Get.currentRoute == AppRoutes.home) {
+        return;
+      }
+    }
+
+    Get.toNamed(AppRoutes.cart);
   }
 
   void clearSession() {
     items.clear();
+    _notifyCartChanged();
     busyProductIds.clear();
     errorMessage.value = null;
     status.value = CartLoadStatus.empty;

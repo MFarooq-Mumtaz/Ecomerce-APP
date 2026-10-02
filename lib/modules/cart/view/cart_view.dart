@@ -48,6 +48,7 @@ class CartView extends GetView<CartController> {
                 icon: Icons.shopping_bag_outlined,
               );
             case CartLoadStatus.success:
+              final cartVersion = controller.cartVersion.value;
               return Column(
                 children: [
                   Expanded(
@@ -62,6 +63,9 @@ class CartView extends GetView<CartController> {
                           itemBuilder: (context, index) {
                             final item = controller.items[index];
                             return CartItemTile(
+                              key: ValueKey(
+                                '${item.product.id}-${item.quantity}-$cartVersion',
+                              ),
                               item: item,
                               onIncrease: () =>
                                   controller.increaseQuantity(item),

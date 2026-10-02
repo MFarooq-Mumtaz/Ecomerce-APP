@@ -1,52 +1,32 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 
+import '../utils/product_image_url.dart';
 import '../theme/app_palette.dart';
 
 class ProductImage extends StatelessWidget {
-  const ProductImage({
-    super.key,
-    this.imageUrl,
-    this.localImagePath,
-    this.fit = BoxFit.cover,
-  });
+  const ProductImage({super.key, this.imageUrl, this.fit = BoxFit.cover});
 
   final String? imageUrl;
-  final String? localImagePath;
   final BoxFit fit;
 
   @override
   Widget build(BuildContext context) {
-    final localPath = localImagePath?.trim();
-    if (localPath != null && localPath.isNotEmpty) {
-      final file = File(localPath);
-      if (file.existsSync()) {
-        return Image.file(
-          file,
-          fit: fit,
-          errorBuilder: (context, error, stackTrace) =>
-              const ProductImageFallback(),
-        );
-      }
-    }
-
     final path = imageUrl?.trim();
     if (path == null || path.isEmpty) {
       return const ProductImageFallback();
     }
 
-    if (path.startsWith('assets/')) {
-      return Image.asset(
-        path,
-        fit: fit,
-        errorBuilder: (context, error, stackTrace) =>
-            const ProductImageFallback(icon: Icons.broken_image_outlined),
-      );
+    final resolvedPath = cloudinaryUrlForAsset(path);
+    if (resolvedPath == null || resolvedPath.isEmpty) {
+      return const ProductImageFallback();
+    }
+
+    if (resolvedPath.startsWith('assets/')) {
+      return const ProductImageFallback(icon: Icons.broken_image_outlined);
     }
 
     return Image.network(
-      path,
+      resolvedPath,
       fit: fit,
       loadingBuilder: (context, child, progress) {
         if (progress == null) {

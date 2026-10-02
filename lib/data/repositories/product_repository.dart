@@ -35,7 +35,7 @@ class ProductRepository {
     final snapshot = await _firestoreService.getActiveProducts();
     return snapshot.docs
         .map(ProductModel.fromFirestore)
-        .where((product) => product.name.trim().isNotEmpty)
+        .where(_isCustomerVisibleProduct)
         .toList();
   }
 
@@ -67,7 +67,7 @@ class ProductRepository {
     );
     return snapshot.docs
         .map(ProductModel.fromFirestore)
-        .where((product) => product.name.trim().isNotEmpty)
+        .where(_isCustomerVisibleProduct)
         .toList();
   }
 
@@ -78,7 +78,7 @@ class ProductRepository {
     }
 
     final product = ProductModel.fromFirestore(snapshot);
-    if (!product.isActive || product.name.trim().isEmpty) {
+    if (!_isCustomerVisibleProduct(product)) {
       return null;
     }
 
@@ -163,5 +163,11 @@ class ProductRepository {
     } catch (_) {
       throw const ProductWriteFailure('Product could not be deleted.');
     }
+  }
+
+  bool _isCustomerVisibleProduct(ProductModel product) {
+    return product.isActive &&
+        product.name.trim().isNotEmpty &&
+        (product.vendorId?.trim().isNotEmpty ?? false);
   }
 }

@@ -183,15 +183,16 @@ class CheckoutController extends GetxController {
       // The order transaction already removed the cart documents.
       _cartController.clearSession();
       await _cartController.loadCart();
-      Get.offAllNamed(AppRoutes.home);
-      AppSnackbar.show('Order placed', 'Your order has been placed.');
+      Get.offAllNamed(AppRoutes.orderPlaced);
     } on OrderFailure catch (failure) {
       AppSnackbar.show('Checkout', failure.message);
       await _cartController.loadCart();
     } catch (_) {
       AppSnackbar.show('Checkout', 'Order could not be placed. Try again.');
     } finally {
-      isPlacingOrder.value = false;
+      if (!isClosed) {
+        isPlacingOrder.value = false;
+      }
     }
   }
 

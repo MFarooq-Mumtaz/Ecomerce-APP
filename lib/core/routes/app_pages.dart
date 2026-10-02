@@ -11,6 +11,7 @@ import '../../modules/app_shell/view/app_shell_view.dart';
 import '../../modules/cart/bindings/cart_binding.dart';
 import '../../modules/cart/view/cart_view.dart';
 import '../../modules/checkout/bindings/checkout_binding.dart';
+import '../../modules/checkout/order_placed/view/order_placed_view.dart';
 import '../../modules/checkout/view/checkout_view.dart';
 import '../../modules/collection/bindings/collection_binding.dart';
 import '../../modules/collection/view/collection_view.dart';
@@ -78,6 +79,7 @@ abstract final class AppPages {
       page: () => const CheckoutView(),
       binding: CheckoutBinding(),
     ),
+    GetPage(name: AppRoutes.orderPlaced, page: () => const OrderPlacedView()),
     GetPage(
       name: AppRoutes.collection,
       page: () => const CollectionView(),

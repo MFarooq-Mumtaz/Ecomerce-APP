@@ -1,7 +1,6 @@
 // Renders every Avero screen on small phones, large phones, landscape phones
-// and tablets, at normal and large font sizes, in light and dark mode, and
-// fails on any layout overflow or build error. Firebase is replaced by
-// in-memory fakes.
+// and tablets, at normal and large font sizes, and fails on any layout
+// overflow or build error. Firebase is replaced by in-memory fakes.
 import 'dart:io';
 
 import 'package:firebase_auth/firebase_auth.dart';
@@ -11,7 +10,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 
 import 'package:flutter_ecommerce_app/core/theme/app_theme.dart';
-import 'package:flutter_ecommerce_app/core/theme/theme_controller.dart';
 import 'package:flutter_ecommerce_app/data/models/address_model.dart';
 import 'package:flutter_ecommerce_app/data/models/category_model.dart';
 import 'package:flutter_ecommerce_app/data/models/order_models.dart';
@@ -28,8 +26,7 @@ import 'package:flutter_ecommerce_app/data/repositories/user_repository.dart';
 import 'package:flutter_ecommerce_app/data/repositories/vendor_repository.dart';
 import 'package:flutter_ecommerce_app/data/repositories/wishlist_repository.dart';
 import 'package:flutter_ecommerce_app/data/services/auth_service.dart';
-import 'package:flutter_ecommerce_app/data/services/local_product_image_service.dart';
-import 'package:flutter_ecommerce_app/data/services/theme_storage_service.dart';
+import 'package:flutter_ecommerce_app/data/services/cloudinary_service.dart';
 import 'package:flutter_ecommerce_app/modules/app_shell/controller/app_shell_controller.dart';
 import 'package:flutter_ecommerce_app/modules/app_shell/view/app_shell_view.dart';
 import 'package:flutter_ecommerce_app/modules/auth/forgot_password/controller/forgot_password_controller.dart';
@@ -271,12 +268,16 @@ void _registerShared() {
 
 void _registerShell() {
   _registerShared();
-  Get.put(ThemeController(ThemeStorageService()));
   Get.put(AppShellController());
   Get.put(HomeController(_productRepository));
   Get.put(CollectionController(_productRepository));
   Get.put(
-    ProfileController(_auth, _FakeAuthRepository(), _FakeUserRepository()),
+    ProfileController(
+      _auth,
+      _FakeAuthRepository(),
+      _FakeUserRepository(),
+      CloudinaryService(),
+    ),
   );
 }
 
@@ -360,7 +361,7 @@ final Map<String, Widget Function()> _screens = {
       VendorProductsController(
         _auth,
         _productRepository,
-        LocalProductImageService(),
+        _FakeVendorRepository(),
       ),
     );
     return const VendorProductsView();
@@ -370,7 +371,8 @@ final Map<String, Widget Function()> _screens = {
       VendorProductFormController(
         _auth,
         _productRepository,
-        LocalProductImageService(),
+        _FakeVendorRepository(),
+        CloudinaryService(),
       ),
     );
     return const VendorProductFormView();
@@ -417,21 +419,20 @@ void main() {
   setUpAll(_loadRobotoFont);
 
   for (final screen in _screens.entries) {
-    testWidgets('${screen.key} has no overflow on any size, font or theme', (
+    testWidgets('${screen.key} has no overflow on any size or font scale', (
       tester,
     ) async {
       final failures = <String>[];
       addTearDown(tester.view.reset);
       addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
 
-      // Every size and font scale in light mode, every size again in dark.
+      // Every size and font scale in the app's light-only theme.
       final runs = [
         for (final size in _sizes.entries)
-          for (final scale in _textScales) (size, scale, ThemeMode.light),
-        for (final size in _sizes.entries) (size, 1.0, ThemeMode.dark),
+          for (final scale in _textScales) (size, scale),
       ];
 
-      for (final (size, scale, themeMode) in runs) {
+      for (final (size, scale) in runs) {
         Get.testMode = true;
         Get.reset();
         tester.view.devicePixelRatio = 2;
@@ -442,8 +443,7 @@ void main() {
           GetMaterialApp(
             debugShowCheckedModeBanner: false,
             theme: AppTheme.light,
-            darkTheme: AppTheme.dark,
-            themeMode: themeMode,
+            themeMode: ThemeMode.light,
             builder: (context, child) => MediaQuery.withClampedTextScaling(
               maxScaleFactor: 1.3,
               child: child!,
@@ -459,7 +459,7 @@ void main() {
         final error = tester.takeException();
         if (error != null) {
           final message = error.toString().split('\n').take(4).join(' ');
-          failures.add('${size.key} @${scale}x ${themeMode.name}: $message');
+          failures.add('${size.key} @${scale}x: $message');
         }
 
         // Unmount before the next size so controllers are disposed.
