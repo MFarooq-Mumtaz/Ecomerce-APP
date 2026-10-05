@@ -14,11 +14,27 @@
       },
       "oauth_client": [
         {
+          "client_id": "176558449603-0bm7fmur7pkf8ojlqoqjhcbelra384k8.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.flutter_ecommerce_app",
+            "certificate_hash": "60ff1b6056e2f995b873181168725f4320d68ebc"
+          }
+        },
+        {
           "client_id": "176558449603-jq0oi0g88prib1663717k6k2969vva4p.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.example.flutter_ecommerce_app",
             "certificate_hash": "695c1fd810e048c82917f1a17f9147b1afc98204"
+          }
+        },
+        {
+          "client_id": "176558449603-mu2v57gaemmk2rul9gd66nnrfvr6k353.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.flutter_ecommerce_app",
+            "certificate_hash": "1bfc54b529eac267dc692a4f912e3fdf1a74cde9"
           }
         },
         {
